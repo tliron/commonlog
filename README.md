@@ -1,30 +1,59 @@
 CommonLog
 =========
 
-A common Go API for structured and unstructured logging with support for runtime-pluggable backends.
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tliron/commonlog.svg)](https://pkg.go.dev/github.com/tliron/commonlog)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tliron/commonlog)](https://goreportcard.com/report/github.com/tliron/commonlog)
 
-The main design goal is to allow for libraries that can integrate well with others without having
-to change their logging code. For example, a library can plug into the klog backend if it's being
-used together with the Kubernetes client.
+A common Go API for structured *and* unstructured logging with support for pluggable backends
+and sinks.
 
-A secondary design goal is to provide a home for a full-featured unstructured logging library,
-which we here call the "simple" backend. It supports rich formatting, including ANSI coloring when
-logging to a terminal, including on Windows.
+Supported backends (you can log *to* these APIs):
+
+* [klog](https://github.com/kubernetes/klog) (used by the [Kubernetes client library](https://github.com/kubernetes/client-go/))
+* [systemd journal](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html)
+* [zerolog](https://github.com/rs/zerolog)
+
+Supported sinks (you can capture logs *from* these APIs):
+
+* [Go built-in logging](https://pkg.go.dev/log)
+* [hclog](https://github.com/hashicorp/go-hclog) (used by many HashiCorp libraries)
+
+The main design goal is to unite your logging and allow you to change its backend at runtime. For example,
+you can choose to log to stderr by default and switch to journald when running as a systemd service. Sinks allow
+you to use your selected backend with imported 3rd-party libraries when they use different logging APIs. This
+design goal is inspired by [SLF4J](https://www.slf4j.org/), and we must lament that the Go ecosystem ended up
+with the same logging challenges that have existed for years in the Java ecosystem.
+
+A secondary design goal is to provide a home for a full-featured unstructured logging library, which we call
+the ["simple" backend](simple/). It supports rich, customizable formatting, including ANSI coloring when logging
+to a terminal (even on Windows). So, CommonLog is useful if you're just looking for a straightforward logging
+solution right now that will allow you to change the technology in the future.
+
+Note that efficiency and performance are *not* in themselves design goals for CommonLog, and indeed there is
+always some overhead involved in wrapper and sink implementations. For example, using
+[zerolog](https://github.com/rs/zerolog) directly involves no allocations, but using it via CommonLog will add
+allocations. If you want zero allocation you must use zerolog directly. Sinks can be especially inefficient
+because they may have to rely on capturing and parsing of log text. Programming is all about tradeoffs:
+CommonLog provides compatibility and flexibility at the cost of some efficiency and performance. However,
+as always, beware of [premature optimization](https://wiki.c2.com/?PrematureOptimization). How you are storing
+or transmitting your log messages is likely the biggest factor in your optimization narrative.
 
 API features:
 
 * Fine-grained control over verbosity via hierarchical log names. For example, "engine.parser.background"
   inherits from "engine.parser", which in turn inherits from "engine". The empty name is the root of the
   hierarchy. Each name's default verbosity is that of its parent, which you can then override with
-  `commonlog.SetMaxLevel`.
+  `commonlog.SetMaxLevel()`.
 * Support for call stack depth. This can be used by a backend (for example, klog) to find out where in
   the code the logging happened.
-* No need to create loggers. The true API entrypoint is the global function `commonlog.NewMessage`, which
-  you provide with a name and a level. The default logger type is just a convenient wrapper around it that
-  provides the familiar unstructured functions.
-* That said, the `commonlog.Logger` type is an interface, allowing you to more easily switch
-  implementations. For example, you can assign the `commonlog.MOCK_LOGGER` to disable a logger without changing
-  your code. (It's unfortunate that Go's [`Logger`](https://pkg.go.dev/log#Logger) type is a struct.)
+* No need to create logger objects. The true API entrypoint is the global function `commonlog.NewMessage()`,
+  which you provide with a name and a level. The default logger type is just a convenient wrapper around it
+  that provides the familiar unstructured functions.
+* The unstructured `commonlog.Logger` type is an interface, allowing you to more easily switch implementations
+  per use without having to introduce a whole backend. For example, you can assign the `commonlog.MOCK_LOGGER`
+  to disable a logger without changing the rest of your implementation. Compare with Go's built-in
+  [`Logger`](https://pkg.go.dev/log#Logger) type, which frustratingly is a struct rather than an interface.
 
 Basic Usage
 -----------
@@ -58,7 +87,7 @@ func main() {
 }
 ```
 
-Note that `commonlog.NewMessage` will return nil if the message cannot be created, for example if the
+Note that `commonlog.NewMessage()` will return nil if the message cannot be created, for example if the
 message level is higher than the max level for that name.
 
 `Set` can accept any key and value, but two keys are recognized by the API:
@@ -106,7 +135,7 @@ var validationLog = commonlog.NewScopeLogger(log, "validation")
 var syntaxLog = commonlog.NewScopeLogger(validationLog, "syntax")
 
 func main() {
-    // Nested scope will be "validation.syntax"
+    // Name is "engine.parser" and scope is "validation.syntax"
     syntaxLog.Errorf("Hello %s!", "world")
     ...
 }
@@ -115,7 +144,7 @@ func main() {
 Configuration
 -------------
 
-All backends can be configured via the same API. For example, to increase verbosity and write
+All backends can be configured via a common API. For example, to increase verbosity and write
 to a file:
 
 ```go
@@ -126,7 +155,8 @@ func main() {
 }
 ```
 
-Backends may also have their own (non-portable) configuration APIs.
+Backends may also have their own (non-common) configuration APIs related to their specific
+features.
 
 You can set the max level (verbosity) using either the global API or a logger. For
 example, here is a way to make all logging verbose by default, except for one name:
@@ -138,8 +168,9 @@ func init() {
 }
 ```
 
-Note that descendents of "engine.parser", e.g. "engine.parser.analysis", would acquire
-its log levels rather than the root's. Here's the same effect using loggers:
+Note that descendents of "engine.parser", e.g. "engine.parser.analysis", would inherit
+the "engine.parser" log levels rather than the root's. Here's the same effect using unstructured
+loggers:
 
 ```go
 var rootLog = commonlog.GetLogger("")
@@ -152,7 +183,7 @@ func init() {
 ```
 
 It's important to note that the configuration APIs are not thread safe. This includes
-`Configure` and `SetMaxLevel`. Thus, make sure to get all your configuration done before
+`Configure()` and `SetMaxLevel()`. Thus, make sure to get all your configuration done before
 you start sending log messages. A good place for this is `init()` or `main()` functions.
 
 Color
@@ -171,7 +202,11 @@ import (
 )
 
 func main() {
-    terminal.EnableColor(false)
+    cleanup, err := terminal.EnableColor(false)
+    util.FailOnError(err)
+    if cleanup != nil {
+        util.OnExitError(cleanup)
+    }
     commonlog.GetLogger("engine.parser").Error("Hello world!") // errors are in red
     util.Exit(0)
 }
