@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/tliron/kutil/terminal"
 )
 
 var backend Backend
@@ -15,6 +17,17 @@ func SetBackend(backend_ Backend) {
 func Configure(verbosity int, path *string) {
 	if backend != nil {
 		backend.Configure(verbosity, path)
+	}
+}
+
+func Initialize(verbosity int, path string) {
+	if path == "" {
+		if terminal.Quiet {
+			verbosity = -4
+		}
+		Configure(verbosity, nil)
+	} else {
+		Configure(verbosity, &path)
 	}
 }
 
