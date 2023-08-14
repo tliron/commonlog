@@ -11,7 +11,7 @@ import (
 
 const LOG_FILE_WRITE_PERMISSIONS = 0600
 
-const BUFFER_SIZE = 10000
+const BUFFER_SIZE = 10_000
 
 func init() {
 	backend := NewBackend()
