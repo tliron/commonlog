@@ -1,13 +1,18 @@
-package journal
+package slog
 
 import (
 	"fmt"
 	"io"
-	"strings"
+	"log/slog"
+	"os"
 
-	"github.com/coreos/go-systemd/journal"
 	"github.com/tliron/commonlog"
+	"github.com/tliron/kutil/util"
 )
+
+const LOG_FILE_WRITE_PERMISSIONS = 0600
+
+const BUFFER_SIZE = 10_000
 
 func init() {
 	backend := NewBackend()
@@ -20,12 +25,17 @@ func init() {
 //
 
 type Backend struct {
+	Logger    *slog.Logger
+	Writer    io.Writer
+	Buffered  bool
+	AddSource bool
+
 	nameHierarchy *commonlog.NameHierarchy
-	writer        io.Writer
 }
 
 func NewBackend() *Backend {
 	return &Backend{
+		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
 }
@@ -35,50 +45,69 @@ func (self *Backend) Configure(verbosity int, path *string) {
 	maxLevel := commonlog.VerbosityToMaxLevel(verbosity)
 
 	if maxLevel == commonlog.None {
-		self.writer = io.Discard
+		self.Writer = io.Discard
+		self.Logger = slog.New(MOCK_HANDLER)
 		self.nameHierarchy.SetMaxLevel(commonlog.None)
 	} else {
-		self.writer = JournalWriter{}
+		if path != nil {
+			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
+				util.OnExitError(file.Close)
+				if self.Buffered {
+					writer := util.NewBufferedWriter(file, BUFFER_SIZE)
+					util.OnExitError(writer.Close)
+					self.Writer = writer
+				} else {
+					self.Writer = util.NewSyncedWriter(file)
+				}
+			} else {
+				util.Failf("log file error: %s", err.Error())
+			}
+		} else if self.Buffered {
+			writer := util.NewBufferedWriter(os.Stderr, BUFFER_SIZE)
+			util.OnExitError(writer.Close)
+			self.Writer = writer
+		} else {
+			self.Writer = util.NewSyncedWriter(os.Stderr)
+		}
+
+		self.Logger = slog.New(slog.NewTextHandler(self.Writer, &slog.HandlerOptions{AddSource: self.AddSource}))
+
 		self.nameHierarchy.SetMaxLevel(maxLevel)
 	}
+
+	slog.SetDefault(self.Logger)
 }
 
 // ([commonlog.Backend] interface)
 func (self *Backend) GetWriter() io.Writer {
-	return self.writer
+	return self.Writer
 }
 
 // ([commonlog.Backend] interface)
 func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string) commonlog.Message {
-	if self.AllowLevel(level, name...) {
-		var priority journal.Priority
+	if (self.Logger != nil) && self.AllowLevel(level, name...) {
+		var slogLevel slog.Level
 		switch level {
 		case commonlog.Critical:
-			priority = journal.PriCrit
+			slogLevel = slog.LevelError
 		case commonlog.Error:
-			priority = journal.PriErr
+			slogLevel = slog.LevelError
 		case commonlog.Warning:
-			priority = journal.PriWarning
+			slogLevel = slog.LevelWarn
 		case commonlog.Notice:
-			priority = journal.PriNotice
+			slogLevel = slog.LevelInfo
 		case commonlog.Info:
-			priority = journal.PriInfo
+			slogLevel = slog.LevelInfo
 		case commonlog.Debug:
-			priority = journal.PriDebug
+			slogLevel = slog.LevelDebug
 		default:
 			panic(fmt.Sprintf("unsupported level: %d", level))
 		}
 
-		var prefix string
-		if name := strings.Join(name, "."); len(name) > 0 {
-			prefix = "[" + name + "] "
-		}
-
-		return NewMessage(priority, prefix)
+		return NewMessage(self.Logger, slogLevel)
 	} else {
 		return nil
 	}
-
 }
 
 // ([commonlog.Backend] interface)

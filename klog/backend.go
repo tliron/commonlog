@@ -28,20 +28,20 @@ func init() {
 type Backend struct {
 	Buffered bool
 
-	writer    io.Writer
-	hierarchy *commonlog.Hierarchy
+	writer        io.Writer
+	nameHierarchy *commonlog.NameHierarchy
 }
 
 func NewBackend() *Backend {
 	return &Backend{
-		Buffered:  true,
-		hierarchy: commonlog.NewMaxLevelHierarchy(),
+		Buffered:      true,
+		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
 }
 
 var flushHandle util.ExitFunctionHandle
 
-// commonlog.Backend interface
+// ([commonlog.Backend] interface)
 func (self *Backend) Configure(verbosity int, path *string) {
 	// klog can also do its own configuration via klog.InitFlags
 
@@ -53,7 +53,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 
 	if maxLevel == commonlog.None {
 		klog.SetOutput(io.Discard)
-		self.hierarchy.SetMaxLevel(nil, commonlog.None)
+		self.nameHierarchy.SetMaxLevel(commonlog.None)
 	} else {
 		if path != nil {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
@@ -80,18 +80,18 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			}
 		}
 
-		self.hierarchy.SetMaxLevel(nil, maxLevel)
+		self.nameHierarchy.SetMaxLevel(maxLevel)
 	}
 }
 
-// commonlog.Backend interface
+// ([commonlog.Backend] interface)
 func (self *Backend) GetWriter() io.Writer {
 	return self.writer
 }
 
-// commonlog.Backend interface
-func (self *Backend) NewMessage(name []string, level commonlog.Level, depth int) commonlog.Message {
-	if self.AllowLevel(name, level) {
+// ([commonlog.Backend] interface)
+func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string) commonlog.Message {
+	if self.AllowLevel(level, name...) {
 		depth += 2
 		return commonlog.NewUnstructuredMessage(func(message string) {
 			if name := strings.Join(name, "."); len(name) > 0 {
@@ -120,17 +120,17 @@ func (self *Backend) NewMessage(name []string, level commonlog.Level, depth int)
 	}
 }
 
-// commonlog.Backend interface
-func (self *Backend) AllowLevel(name []string, level commonlog.Level) bool {
-	return self.hierarchy.AllowLevel(name, level)
+// ([commonlog.Backend] interface)
+func (self *Backend) AllowLevel(level commonlog.Level, name ...string) bool {
+	return self.nameHierarchy.AllowLevel(level, name...)
 }
 
-// commonlog.Backend interface
-func (self *Backend) SetMaxLevel(name []string, level commonlog.Level) {
-	self.hierarchy.SetMaxLevel(name, level)
+// ([commonlog.Backend] interface)
+func (self *Backend) SetMaxLevel(level commonlog.Level, name ...string) {
+	self.nameHierarchy.SetMaxLevel(level, name...)
 }
 
-// commonlog.Backend interface
-func (self *Backend) GetMaxLevel(name []string) commonlog.Level {
-	return self.hierarchy.GetMaxLevel(name)
+// ([commonlog.Backend] interface)
+func (self *Backend) GetMaxLevel(name ...string) commonlog.Level {
+	return self.nameHierarchy.GetMaxLevel(name...)
 }

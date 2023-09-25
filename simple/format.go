@@ -13,7 +13,7 @@ const TIME_FORMAT = "2006/01/02 15:04:05.000"
 
 type FormatFunc func(message string, id []string, level commonlog.Level, colorize bool) string
 
-// FormatFunc signature
+// ([FormatFunc] signature)
 func DefaultFormat(message string, id []string, level commonlog.Level, colorize bool) string {
 	var builder strings.Builder
 

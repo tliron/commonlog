@@ -26,7 +26,7 @@ func NewMessage(priority journal.Priority, prefix string) commonlog.Message {
 	}
 }
 
-// commonlog.Message interface
+// ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
 	switch key {
 	case "message":
@@ -44,7 +44,7 @@ func (self *Message) Set(key string, value any) commonlog.Message {
 	return self
 }
 
-// commonlog.Message interface
+// ([commonlog.Message] interface)
 func (self *Message) Send() {
 	journal.Send(self.prefix+self.message, self.priority, self.vars)
 }

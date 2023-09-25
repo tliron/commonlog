@@ -1,18 +1,31 @@
 package commonlog
 
-import "fmt"
+import (
+	"fmt"
+)
 
 //
 // Logger
 //
 
+// While [NewMessage] is the "true" API entry point, this interface enables
+// a familiar logger API. Because it's an interface, references can easily
+// replace the implementation, for example setting a reference to
+// [MOCK_LOGGER] will disable the logger.
+//
+// See [GetLogger].
 type Logger interface {
-	NewMessage(level Level, depth int) Message
+	// Levels
+
 	AllowLevel(level Level) bool
 	SetMaxLevel(level Level)
 	GetMaxLevel() Level
 
-	// For unstructured logging
+	// Structured logging
+
+	NewMessage(level Level, depth int) Message
+
+	// Unstructured logging
 
 	Log(level Level, depth int, message string)
 	Logf(level Level, depth int, format string, values ...any)
@@ -35,35 +48,37 @@ type Logger interface {
 // BackendLogger
 //
 
+// Default [Logger] implementation that logs to the current backend set with
+// [SetBackend].
 type BackendLogger struct {
 	name []string
 }
 
-func NewBackendLogger(id []string) BackendLogger {
-	return BackendLogger{name: id}
+func NewBackendLogger(name ...string) BackendLogger {
+	return BackendLogger{name: name}
 }
 
-// Logger interface
-func (self BackendLogger) NewMessage(level Level, depth int) Message {
-	return NewMessage(self.name, level, depth)
-}
-
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) AllowLevel(level Level) bool {
-	return AllowLevel(self.name, level)
+	return AllowLevel(level, self.name...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) SetMaxLevel(level Level) {
-	SetMaxLevel(self.name, level)
+	SetMaxLevel(level, self.name...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) GetMaxLevel() Level {
 	return GetMaxLevel(self.name)
 }
 
-// Logger interface
+// ([Logger] interface)
+func (self BackendLogger) NewMessage(level Level, depth int) Message {
+	return NewMessage(level, depth, self.name...)
+}
+
+// ([Logger] interface)
 func (self BackendLogger) Log(level Level, depth int, message string) {
 	if message_ := self.NewMessage(level, depth+1); message_ != nil {
 		message_.Set("message", message)
@@ -71,7 +86,7 @@ func (self BackendLogger) Log(level Level, depth int, message string) {
 	}
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Logf(level Level, depth int, format string, values ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
 		message.Set("message", fmt.Sprintf(format, values...))
@@ -79,62 +94,62 @@ func (self BackendLogger) Logf(level Level, depth int, format string, values ...
 	}
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Critical(message string) {
 	self.Log(Critical, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Criticalf(format string, values ...any) {
 	self.Logf(Critical, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Error(message string) {
 	self.Log(Error, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Errorf(format string, values ...any) {
 	self.Logf(Error, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Warning(message string) {
 	self.Log(Warning, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Warningf(format string, values ...any) {
 	self.Logf(Warning, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Notice(message string) {
 	self.Log(Notice, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Noticef(format string, values ...any) {
 	self.Logf(Notice, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Info(message string) {
 	self.Log(Info, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Infof(format string, values ...any) {
 	self.Logf(Info, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Debug(message string) {
 	self.Log(Debug, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self BackendLogger) Debugf(format string, values ...any) {
 	self.Logf(Debug, 1, format, values...)
 }
@@ -143,6 +158,10 @@ func (self BackendLogger) Debugf(format string, values ...any) {
 // ScopeLogger
 //
 
+// Wrapping [Logger] that calls [Message.Set] with a "scope" key
+// on all messages. There is special support for nesting scope loggers
+// such that a nested scope string is appended to the wrapped scope with
+// a "." notation.
 type ScopeLogger struct {
 	logger Logger
 	scope  string
@@ -160,7 +179,22 @@ func NewScopeLogger(logger Logger, scope string) ScopeLogger {
 	}
 }
 
-// Logger interface
+// ([Logger] interface)
+func (self ScopeLogger) AllowLevel(level Level) bool {
+	return self.logger.AllowLevel(level)
+}
+
+// ([Logger] interface)
+func (self ScopeLogger) SetMaxLevel(level Level) {
+	self.logger.SetMaxLevel(level)
+}
+
+// ([Logger] interface)
+func (self ScopeLogger) GetMaxLevel() Level {
+	return self.logger.GetMaxLevel()
+}
+
+// ([Logger] interface)
 func (self ScopeLogger) NewMessage(level Level, depth int) Message {
 	if message := self.logger.NewMessage(level, depth); message != nil {
 		message.Set("scope", self.scope)
@@ -170,22 +204,7 @@ func (self ScopeLogger) NewMessage(level Level, depth int) Message {
 	}
 }
 
-// Logger interface
-func (self ScopeLogger) AllowLevel(level Level) bool {
-	return self.logger.AllowLevel(level)
-}
-
-// Logger interface
-func (self ScopeLogger) SetMaxLevel(level Level) {
-	self.logger.SetMaxLevel(level)
-}
-
-// Logger interface
-func (self ScopeLogger) GetMaxLevel() Level {
-	return self.logger.GetMaxLevel()
-}
-
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Log(level Level, depth int, message string) {
 	if message_ := self.NewMessage(level, depth+1); message_ != nil {
 		message_.Set("message", message)
@@ -193,7 +212,7 @@ func (self ScopeLogger) Log(level Level, depth int, message string) {
 	}
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Logf(level Level, depth int, format string, values ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
 		message.Set("message", fmt.Sprintf(format, values...))
@@ -201,62 +220,62 @@ func (self ScopeLogger) Logf(level Level, depth int, format string, values ...an
 	}
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Critical(message string) {
 	self.Log(Critical, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Criticalf(format string, values ...any) {
 	self.Logf(Critical, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Error(message string) {
 	self.Log(Error, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Errorf(format string, values ...any) {
 	self.Logf(Error, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Warning(message string) {
 	self.Log(Warning, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Warningf(format string, values ...any) {
 	self.Logf(Warning, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Notice(message string) {
 	self.Log(Notice, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Noticef(format string, values ...any) {
 	self.Logf(Notice, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Info(message string) {
 	self.Log(Info, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Infof(format string, values ...any) {
 	self.Logf(Info, 1, format, values...)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Debug(message string) {
 	self.Log(Debug, 1, message)
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self ScopeLogger) Debugf(format string, values ...any) {
 	self.Logf(Debug, 1, format, values...)
 }
@@ -267,79 +286,80 @@ func (self ScopeLogger) Debugf(format string, values ...any) {
 
 var MOCK_LOGGER MockLogger
 
+// [Logger] that does nothing.
 type MockLogger struct{}
 
-// Logger interface
-func (self MockLogger) NewMessage(level Level, depth int) Message {
-	return nil
-}
-
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) AllowLevel(level Level) bool {
 	return false
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) SetMaxLevel(level Level) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) GetMaxLevel() Level {
 	return None
 }
 
-// Logger interface
+// ([Logger] interface)
+func (self MockLogger) NewMessage(level Level, depth int) Message {
+	return nil
+}
+
+// ([Logger] interface)
 func (self MockLogger) Log(level Level, depth int, message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Logf(level Level, depth int, format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Critical(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Criticalf(format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Error(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Errorf(format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Warning(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Warningf(format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Notice(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Noticef(format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Info(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Infof(format string, values ...any) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Debug(message string) {
 }
 
-// Logger interface
+// ([Logger] interface)
 func (self MockLogger) Debugf(format string, values ...any) {
 }

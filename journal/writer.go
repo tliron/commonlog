@@ -11,7 +11,7 @@ import (
 
 type JournalWriter struct{}
 
-// io.Writer interface
+// ([io.Writer] interface)
 func (self JournalWriter) Write(p []byte) (int, error) {
 	journal.Send(util.BytesToString(p), journal.PriDebug, nil)
 	return len(p), nil

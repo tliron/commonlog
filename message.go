@@ -9,7 +9,16 @@ import (
 //
 
 type Message interface {
+	// Sets a value on the message and returns the same message
+	// object.
+	//
+	// These keys are often specially supported:
+	//
+	// "message": the base text of the message
+	// "scope": the scope of the message
 	Set(key string, value any) Message
+
+	// Sends the message to the backend
 	Send()
 }
 
@@ -19,6 +28,8 @@ type Message interface {
 
 type SendUnstructuredMessageFunc func(message string)
 
+// Convenience type for implementing unstructured backends. Converts a structured
+// message to an unstructured string.
 type UnstructuredMessage struct {
 	prefix  string
 	message string
@@ -32,8 +43,7 @@ func NewUnstructuredMessage(send SendUnstructuredMessageFunc) *UnstructuredMessa
 	}
 }
 
-// Message interface
-
+// ([Message] interface)
 func (self *UnstructuredMessage) Set(key string, value any) Message {
 	switch key {
 	case "message":
@@ -52,6 +62,7 @@ func (self *UnstructuredMessage) Set(key string, value any) Message {
 	return self
 }
 
+// ([Message] interface)
 func (self *UnstructuredMessage) Send() {
 	message := self.prefix
 

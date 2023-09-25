@@ -19,7 +19,7 @@ func NewMessage(event *zerolog.Event) commonlog.Message {
 	return &Message{event: event}
 }
 
-// commonlog.Message interface
+// ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
 	switch value_ := value.(type) {
 	case string:
@@ -61,7 +61,7 @@ func (self *Message) Set(key string, value any) commonlog.Message {
 	return self
 }
 
-// commonlog.Message interface
+// ([commonlog.Message] interface)
 func (self *Message) Send() {
 	self.event.Send()
 }

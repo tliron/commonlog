@@ -14,7 +14,7 @@ const (
 	MEMBERLIST_DEBUG_PREFIX = "[DEBUG] memberlist: "
 )
 
-func NewMemberlistStandardLog(name []string) *log.Logger {
+func NewMemberlistStandardLog(name ...string) *log.Logger {
 	return NewStandardLogger(func(line string) commonlog.Message {
 		level := commonlog.Debug
 
@@ -28,7 +28,7 @@ func NewMemberlistStandardLog(name []string) *log.Logger {
 			line = line[len(MEMBERLIST_DEBUG_PREFIX):]
 		}
 
-		if message := commonlog.NewMessage(name, level, 2); message != nil {
+		if message := commonlog.NewMessage(level, 2, name...); message != nil {
 			message.Set("message", line)
 			return message
 		} else {
@@ -49,17 +49,17 @@ func NewMemberlistEventLog(log commonlog.Logger) *MemberlistEventLog {
 	return &MemberlistEventLog{log}
 }
 
-// memberlist.EventDelegate interface
+// ([memberlist.EventDelegate] interface)
 func (self *MemberlistEventLog) NotifyJoin(node *memberlist.Node) {
 	self.log.Infof("node has joined: %s", node.String())
 }
 
-// memberlist.EventDelegate interface
+// ([memberlist.EventDelegate] interface)
 func (self *MemberlistEventLog) NotifyLeave(node *memberlist.Node) {
 	self.log.Infof("node has left: %s", node.String())
 }
 
-// memberlist.EventDelegate interface
+// ([memberlist.EventDelegate] interface)
 func (self *MemberlistEventLog) NotifyUpdate(node *memberlist.Node) {
 	self.log.Infof("node was updated: %s", node.String())
 }

@@ -20,7 +20,7 @@ const (
 	Debug    Level = 6
 )
 
-// fmt.Stringify interface
+// ([fmt.Stringify] interface)
 func (self Level) String() string {
 	switch self {
 	case None:
@@ -42,11 +42,29 @@ func (self Level) String() string {
 	}
 }
 
+// Translates a verbosity number to a maximum loggable level as
+// follows:
+//
+// -4 and below: [None]
+// -3: [Critical]
+// -2: [Error]
+// -1: [Warning]
+// 0: [Notice]
+// 1: [Info]
+// 2 and above: [Debug]
 func VerbosityToMaxLevel(verbosity int) Level {
-	if verbosity < 0 {
+	if verbosity < -4 {
 		return None
 	} else {
 		switch verbosity {
+		case -4:
+			return None
+		case -3:
+			return Critical
+		case -2:
+			return Error
+		case -1:
+			return Warning
 		case 0:
 			return Notice
 		case 1:
