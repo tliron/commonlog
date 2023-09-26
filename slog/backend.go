@@ -1,6 +1,7 @@
 package slog
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -62,15 +63,15 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			} else {
 				util.Failf("log file error: %s", err.Error())
 			}
-		} else if self.Buffered {
-			writer := util.NewBufferedWriter(os.Stderr, BUFFER_SIZE)
-			util.OnExitError(writer.Close)
-			self.Writer = writer
 		} else {
-			self.Writer = util.NewSyncedWriter(os.Stderr)
+			// Note: TextHandler does its own buffering, apparently
+			self.Writer = os.Stderr
 		}
 
-		self.Logger = slog.New(slog.NewTextHandler(self.Writer, &slog.HandlerOptions{AddSource: self.AddSource}))
+		self.Logger = slog.New(slog.NewTextHandler(self.Writer, &slog.HandlerOptions{
+			AddSource: self.AddSource,
+			Level:     slog.LevelDebug,
+		}))
 
 		self.nameHierarchy.SetMaxLevel(maxLevel)
 	}
@@ -104,7 +105,7 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 			panic(fmt.Sprintf("unsupported level: %d", level))
 		}
 
-		return NewMessage(self.Logger, slogLevel)
+		return NewMessage(self.Logger, slogLevel, context.Background())
 	} else {
 		return nil
 	}

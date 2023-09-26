@@ -1,7 +1,7 @@
 package slog
 
 import (
-	"context"
+	contextpkg "context"
 	"log/slog"
 
 	"github.com/tliron/commonlog"
@@ -15,14 +15,17 @@ import (
 type Message struct {
 	logger  *slog.Logger
 	level   slog.Level
+	context contextpkg.Context
+
 	message string
 	args    []any
 }
 
-func NewMessage(logger *slog.Logger, level slog.Level) commonlog.Message {
+func NewMessage(logger *slog.Logger, level slog.Level, context contextpkg.Context) commonlog.Message {
 	return &Message{
-		logger: logger,
-		level:  level,
+		logger:  logger,
+		level:   level,
+		context: context,
 	}
 }
 
@@ -41,5 +44,5 @@ func (self *Message) Set(key string, value any) commonlog.Message {
 
 // ([commonlog.Message] interface)
 func (self *Message) Send() {
-	self.logger.Log(context.Background(), self.level, self.message, self.args...)
+	self.logger.Log(self.context, self.level, self.message, self.args...)
 }
