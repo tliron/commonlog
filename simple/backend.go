@@ -11,7 +11,7 @@ import (
 
 const LOG_FILE_WRITE_PERMISSIONS = 0600
 
-const BUFFER_SIZE = 10_000
+const DEFAULT_BUFFER_SIZE = 1_000
 
 func init() {
 	backend := NewBackend()
@@ -24,9 +24,10 @@ func init() {
 //
 
 type Backend struct {
-	Writer   io.Writer
-	Format   FormatFunc
-	Buffered bool
+	Writer     io.Writer
+	Format     FormatFunc
+	BufferSize int
+	Buffered   bool
 
 	colorize      bool
 	nameHierarchy *commonlog.NameHierarchy
@@ -35,6 +36,7 @@ type Backend struct {
 func NewBackend() *Backend {
 	return &Backend{
 		Format:        DefaultFormat,
+		BufferSize:    DEFAULT_BUFFER_SIZE,
 		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
@@ -52,7 +54,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
-					writer := util.NewBufferedWriter(file, BUFFER_SIZE)
+					writer := util.NewBufferedWriter(file, self.BufferSize)
 					util.OnExitError(writer.Close)
 					self.Writer = writer
 				} else {
@@ -64,7 +66,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 		} else {
 			self.colorize = terminal.Colorize
 			if self.Buffered {
-				writer := util.NewBufferedWriter(os.Stderr, BUFFER_SIZE)
+				writer := util.NewBufferedWriter(os.Stderr, self.BufferSize)
 				util.OnExitError(writer.Close)
 				self.Writer = writer
 			} else {

@@ -83,17 +83,10 @@ func (self *StandardStructuredHandler) WithGroup(name string) slog.Handler {
 func (self *StandardStructuredHandler) clone() *StandardStructuredHandler {
 	handler := NewStandardStructuredHandler(self.name...)
 
-	if length := len(self.attrs); length > 0 {
-		handler.attrs = make([]slog.Attr, length)
-		copy(handler.attrs, self.attrs)
-	}
+	handler.attrs = append(self.attrs[:0:0], self.attrs...)
 
 	handler.currentGroupName = self.currentGroupName
-
-	if length := len(self.currentGroupAttrs); length > 0 {
-		handler.currentGroupAttrs = make([]slog.Attr, length)
-		copy(handler.currentGroupAttrs, self.currentGroupAttrs)
-	}
+	handler.currentGroupAttrs = append(self.currentGroupAttrs[:0:0], self.currentGroupAttrs...)
 
 	return handler
 }

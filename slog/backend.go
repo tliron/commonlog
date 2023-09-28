@@ -13,7 +13,7 @@ import (
 
 const LOG_FILE_WRITE_PERMISSIONS = 0600
 
-const BUFFER_SIZE = 10_000
+const DEFAULT_BUFFER_SIZE = 1_000
 
 func init() {
 	backend := NewBackend()
@@ -26,16 +26,18 @@ func init() {
 //
 
 type Backend struct {
-	Logger    *slog.Logger
-	Writer    io.Writer
-	Buffered  bool
-	AddSource bool
+	Logger     *slog.Logger
+	Writer     io.Writer
+	BufferSize int
+	Buffered   bool
+	AddSource  bool
 
 	nameHierarchy *commonlog.NameHierarchy
 }
 
 func NewBackend() *Backend {
 	return &Backend{
+		BufferSize:    DEFAULT_BUFFER_SIZE,
 		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
@@ -54,7 +56,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
-					writer := util.NewBufferedWriter(file, BUFFER_SIZE)
+					writer := util.NewBufferedWriter(file, self.BufferSize)
 					util.OnExitError(writer.Close)
 					self.Writer = writer
 				} else {
@@ -63,9 +65,12 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			} else {
 				util.Failf("log file error: %s", err.Error())
 			}
+		} else if self.Buffered {
+			writer := util.NewBufferedWriter(os.Stderr, self.BufferSize)
+			util.OnExitError(writer.Close)
+			self.Writer = writer
 		} else {
-			// Note: TextHandler does its own buffering, apparently
-			self.Writer = os.Stderr
+			self.Writer = util.NewSyncedWriter(os.Stderr)
 		}
 
 		self.Logger = slog.New(slog.NewTextHandler(self.Writer, &slog.HandlerOptions{

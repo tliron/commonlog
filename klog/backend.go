@@ -13,7 +13,7 @@ import (
 
 const LOG_FILE_WRITE_PERMISSIONS = 0600
 
-const BUFFER_SIZE = 10_000
+const DEFAULT_BUFFER_SIZE = 1_000
 
 func init() {
 	backend := NewBackend()
@@ -26,7 +26,8 @@ func init() {
 //
 
 type Backend struct {
-	Buffered bool
+	BufferSize int
+	Buffered   bool
 
 	writer        io.Writer
 	nameHierarchy *commonlog.NameHierarchy
@@ -34,6 +35,7 @@ type Backend struct {
 
 func NewBackend() *Backend {
 	return &Backend{
+		BufferSize:    DEFAULT_BUFFER_SIZE,
 		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
@@ -59,7 +61,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
-					writer := util.NewBufferedWriter(file, BUFFER_SIZE)
+					writer := util.NewBufferedWriter(file, self.BufferSize)
 					util.OnExitError(writer.Close)
 					self.writer = writer
 					klog.SetOutput(writer)
@@ -69,15 +71,13 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			} else {
 				util.Failf("log file error: %s", err.Error())
 			}
+		} else if self.Buffered {
+			writer := util.NewBufferedWriter(os.Stderr, self.BufferSize)
+			util.OnExitError(writer.Close)
+			self.writer = writer
+			klog.SetOutput(writer)
 		} else {
-			if self.Buffered {
-				writer := util.NewBufferedWriter(os.Stderr, BUFFER_SIZE)
-				util.OnExitError(writer.Close)
-				self.writer = writer
-				klog.SetOutput(writer)
-			} else {
-				klog.SetOutput(util.NewSyncedWriter(os.Stderr))
-			}
+			klog.SetOutput(util.NewSyncedWriter(os.Stderr))
 		}
 
 		self.nameHierarchy.SetMaxLevel(maxLevel)
