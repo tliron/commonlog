@@ -13,31 +13,38 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+const LOG_FILE_WRITE_PERMISSIONS = 0600
+
+const DEFAULT_BUFFER_SIZE = 1_000
+
+const TIME_FORMAT = "2006/01/02 15:04:05.000"
+
 func init() {
 	backend := NewBackend()
 	backend.Configure(0, nil)
 	commonlog.SetBackend(backend)
 }
 
-const LOG_FILE_WRITE_PERMISSIONS = 0600
-
-const TIME_FORMAT = "2006/01/02 15:04:05.000"
-
 //
 // Backend
 //
 
-// Note: using kutil to wrap zerolog will circumvent its primary optimization, which is for high
-// performance and low resource use due to aggressively avoiding allocations. If you need that
-// optimization then you should use zerolog's API directly.
+// Note: using commonlog to wrap zerolog will circumvent its primary optimization, which is for
+// high performance and low resource use due to aggressively avoiding allocations. If you need
+// that optimization then you should use zerolog's API directly.
 
 type Backend struct {
-	writer        io.Writer
+	Writer     io.Writer
+	BufferSize int
+	Buffered   bool
+
 	nameHierarchy *commonlog.NameHierarchy
 }
 
 func NewBackend() *Backend {
 	return &Backend{
+		BufferSize:    DEFAULT_BUFFER_SIZE,
+		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
 }
@@ -47,29 +54,40 @@ func (self *Backend) Configure(verbosity int, path *string) {
 	maxLevel := commonlog.VerbosityToMaxLevel(verbosity)
 
 	if maxLevel == commonlog.None {
-		self.writer = io.Discard
+		self.Writer = io.Discard
 		self.nameHierarchy.SetMaxLevel(commonlog.None)
-		logpkg.Logger = zerolog.New(self.writer)
+		logpkg.Logger = zerolog.New(self.Writer)
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 	} else {
 		if path != nil {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
-				self.writer = file
-				logpkg.Logger = zerolog.New(self.writer)
+				if self.Buffered {
+					writer := util.NewBufferedWriter(file, self.BufferSize)
+					util.OnExitError(writer.Close)
+					self.Writer = writer
+				} else {
+					self.Writer = util.NewSyncedWriter(file)
+				}
+				logpkg.Logger = zerolog.New(self.Writer)
 			} else {
 				util.Failf("log file error: %s", err.Error())
 			}
 		} else {
-			self.writer = os.Stderr
+			self.Writer = os.Stderr
 			if terminal.Colorize {
+				// Note: ConsoleWriter has its own built-in support for
+				// colorization, including for Windows terminals, which
+				// relies on Out being equal to Stdout or Stderr, thus
+				// we shouldn't use any wrappers for Out such as
+				// BufferedWriter or SyncedWriter
 				logpkg.Logger = zerolog.New(zerolog.ConsoleWriter{
-					Out:        self.writer,
+					Out:        self.Writer,
 					TimeFormat: TIME_FORMAT,
 				})
 			} else {
 				logpkg.Logger = zerolog.New(zerolog.ConsoleWriter{
-					Out:        self.writer,
+					Out:        self.Writer,
 					TimeFormat: TIME_FORMAT,
 					NoColor:    true,
 				})
@@ -85,7 +103,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 
 // ([commonlog.Backend] interface)
 func (self *Backend) GetWriter() io.Writer {
-	return self.writer
+	return self.Writer
 }
 
 // ([commonlog.Backend] interface)

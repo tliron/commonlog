@@ -12,7 +12,8 @@ var backend Backend
 
 // Sets the current backend.
 //
-// A nil backend will disable all logging.
+// A nil backend will disable all logging
+// (but the APIs would still not fail).
 func SetBackend(backend_ Backend) {
 	backend = backend_
 }
@@ -52,15 +53,19 @@ func Initialize(verbosity int, path string) {
 	}
 }
 
-// Gets the current backend's [io.Writer].
+// Gets the current backend's [io.Writer]. Guaranteed to always return
+// a valid non-nil value.
 //
-// Can be nil if unsupported by the backend or if no backend was set.
+// Can be [io.Discard] if unsupported by the backend or if no backend was
+// set.
 func GetWriter() io.Writer {
 	if backend != nil {
-		return backend.GetWriter()
-	} else {
-		return nil
+		if writer := backend.GetWriter(); writer != nil {
+			return writer
+		}
 	}
+
+	return io.Discard
 }
 
 // Returns true if a level is loggable for the given name on the
@@ -100,9 +105,11 @@ func GetMaxLevel(name []string) Level {
 }
 
 // Creates a new message for the given name on the current backend.
-//
 // Will return nil if the level is not loggable for the name, is
 // [None], or if no backend was set.
+//
+// The depth argument is used for skipping frames in callstack
+// logging, if supported.
 func NewMessage(level Level, depth int, name ...string) Message {
 	if (backend != nil) && (level != None) {
 		return backend.NewMessage(level, depth, name...)

@@ -1,6 +1,8 @@
 package commonlog
 
 import (
+	"fmt"
+
 	"github.com/tliron/kutil/util"
 )
 
@@ -20,6 +22,28 @@ type Message interface {
 
 	// Sends the message to the backend
 	Send()
+}
+
+// Calls [Message.Set] on a provided sequence of key-value pairs.
+// Thus keysAndValues must have an even length.
+//
+// Non-string keys are converted to strings using [util.ToString].
+func SetMessageKeysAndValue(message Message, keysAndValues ...any) {
+	length := len(keysAndValues)
+
+	if length == 0 {
+		return
+	}
+
+	if length%2 != 0 {
+		panic(fmt.Sprintf("CommonLog message keysAndValues does not have an even number of arguments: %d", length))
+	}
+
+	for index := 0; index < length; index += 2 {
+		key := util.ToString(keysAndValues[index])
+		value := keysAndValues[index+1]
+		message.Set(key, value)
+	}
 }
 
 //

@@ -15,33 +15,44 @@ import (
 //
 // See [GetLogger].
 type Logger interface {
-	// Levels
-
+	// Returns true if a level is loggable for this logger.
 	AllowLevel(level Level) bool
+
+	// Sets the maximum loggable level for this logger.
 	SetMaxLevel(level Level)
+
+	// Gets the maximum loggable level for this logger.
 	GetMaxLevel() Level
 
-	// Structured logging
+	// Creates a new message for this logger. Will return nil if
+	// the level is not loggable.
+	//
+	// The depth argument is used for skipping frames in callstack
+	// logging, if supported.
+	NewMessage(level Level, depth int, keysAndValues ...any) Message
 
-	NewMessage(level Level, depth int) Message
+	// Convenience method to create and send a message with at least
+	// the "message" key. Additional keys can be set by providing
+	// a sequence of key-value pairs.
+	Log(level Level, depth int, message string, keysAndValues ...any)
 
-	// Unstructured logging
+	// Convenience method to create and send a message with just
+	// the "message" key, where the message is created via the format
+	// and args similarly to fmt.Printf.
+	Logf(level Level, depth int, format string, args ...any)
 
-	Log(level Level, depth int, message string)
-	Logf(level Level, depth int, format string, values ...any)
-
-	Critical(message string)
-	Criticalf(format string, values ...any)
-	Error(message string)
-	Errorf(format string, values ...any)
-	Warning(message string)
-	Warningf(format string, values ...any)
-	Notice(message string)
-	Noticef(format string, values ...any)
-	Info(message string)
-	Infof(format string, values ...any)
-	Debug(message string)
-	Debugf(format string, values ...any)
+	Critical(message string, keysAndValues ...any)
+	Criticalf(format string, args ...any)
+	Error(message string, keysAndValues ...any)
+	Errorf(format string, args ...any)
+	Warning(message string, keysAndValues ...any)
+	Warningf(format string, args ...any)
+	Notice(message string, keysAndValues ...any)
+	Noticef(format string, args ...any)
+	Info(message string, keysAndValues ...any)
+	Infof(format string, args ...any)
+	Debug(message string, keysAndValues ...any)
+	Debugf(format string, args ...any)
 }
 
 //
@@ -74,84 +85,89 @@ func (self BackendLogger) GetMaxLevel() Level {
 }
 
 // ([Logger] interface)
-func (self BackendLogger) NewMessage(level Level, depth int) Message {
-	return NewMessage(level, depth, self.name...)
+func (self BackendLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
+	if message := NewMessage(level, depth, self.name...); message != nil {
+		SetMessageKeysAndValue(message, keysAndValues...)
+		return message
+	} else {
+		return nil
+	}
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Log(level Level, depth int, message string) {
-	if message_ := self.NewMessage(level, depth+1); message_ != nil {
+func (self BackendLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
+	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
 		message_.Set("message", message)
 		message_.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Logf(level Level, depth int, format string, values ...any) {
+func (self BackendLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("message", fmt.Sprintf(format, values...))
+		message.Set("message", fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Critical(message string) {
-	self.Log(Critical, 1, message)
+func (self BackendLogger) Critical(message string, keysAndValues ...any) {
+	self.Log(Critical, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Criticalf(format string, values ...any) {
-	self.Logf(Critical, 1, format, values...)
+func (self BackendLogger) Criticalf(format string, args ...any) {
+	self.Logf(Critical, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Error(message string) {
-	self.Log(Error, 1, message)
+func (self BackendLogger) Error(message string, keysAndValues ...any) {
+	self.Log(Error, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Errorf(format string, values ...any) {
-	self.Logf(Error, 1, format, values...)
+func (self BackendLogger) Errorf(format string, args ...any) {
+	self.Logf(Error, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Warning(message string) {
-	self.Log(Warning, 1, message)
+func (self BackendLogger) Warning(message string, keysAndValues ...any) {
+	self.Log(Warning, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Warningf(format string, values ...any) {
-	self.Logf(Warning, 1, format, values...)
+func (self BackendLogger) Warningf(format string, args ...any) {
+	self.Logf(Warning, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Notice(message string) {
-	self.Log(Notice, 1, message)
+func (self BackendLogger) Notice(message string, keysAndValues ...any) {
+	self.Log(Notice, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Noticef(format string, values ...any) {
-	self.Logf(Notice, 1, format, values...)
+func (self BackendLogger) Noticef(format string, args ...any) {
+	self.Logf(Notice, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Info(message string) {
-	self.Log(Info, 1, message)
+func (self BackendLogger) Info(message string, keysAndValues ...any) {
+	self.Log(Info, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Infof(format string, values ...any) {
-	self.Logf(Info, 1, format, values...)
+func (self BackendLogger) Infof(format string, args ...any) {
+	self.Logf(Info, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Debug(message string) {
-	self.Log(Debug, 1, message)
+func (self BackendLogger) Debug(message string, keysAndValues ...any) {
+	self.Log(Debug, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self BackendLogger) Debugf(format string, values ...any) {
-	self.Logf(Debug, 1, format, values...)
+func (self BackendLogger) Debugf(format string, args ...any) {
+	self.Logf(Debug, 1, format, args...)
 }
 
 //
@@ -195,8 +211,8 @@ func (self ScopeLogger) GetMaxLevel() Level {
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) NewMessage(level Level, depth int) Message {
-	if message := self.logger.NewMessage(level, depth); message != nil {
+func (self ScopeLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
+	if message := self.logger.NewMessage(level, depth, keysAndValues...); message != nil {
 		message.Set("scope", self.scope)
 		return message
 	} else {
@@ -205,79 +221,79 @@ func (self ScopeLogger) NewMessage(level Level, depth int) Message {
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Log(level Level, depth int, message string) {
-	if message_ := self.NewMessage(level, depth+1); message_ != nil {
+func (self ScopeLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
+	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
 		message_.Set("message", message)
 		message_.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Logf(level Level, depth int, format string, values ...any) {
+func (self ScopeLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("message", fmt.Sprintf(format, values...))
+		message.Set("message", fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Critical(message string) {
-	self.Log(Critical, 1, message)
+func (self ScopeLogger) Critical(message string, keysAndValues ...any) {
+	self.Log(Critical, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Criticalf(format string, values ...any) {
-	self.Logf(Critical, 1, format, values...)
+func (self ScopeLogger) Criticalf(format string, args ...any) {
+	self.Logf(Critical, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Error(message string) {
-	self.Log(Error, 1, message)
+func (self ScopeLogger) Error(message string, keysAndValues ...any) {
+	self.Log(Error, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Errorf(format string, values ...any) {
-	self.Logf(Error, 1, format, values...)
+func (self ScopeLogger) Errorf(format string, args ...any) {
+	self.Logf(Error, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Warning(message string) {
-	self.Log(Warning, 1, message)
+func (self ScopeLogger) Warning(message string, keysAndValues ...any) {
+	self.Log(Warning, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Warningf(format string, values ...any) {
-	self.Logf(Warning, 1, format, values...)
+func (self ScopeLogger) Warningf(format string, args ...any) {
+	self.Logf(Warning, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Notice(message string) {
-	self.Log(Notice, 1, message)
+func (self ScopeLogger) Notice(message string, keysAndValues ...any) {
+	self.Log(Notice, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Noticef(format string, values ...any) {
-	self.Logf(Notice, 1, format, values...)
+func (self ScopeLogger) Noticef(format string, args ...any) {
+	self.Logf(Notice, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Info(message string) {
-	self.Log(Info, 1, message)
+func (self ScopeLogger) Info(message string, keysAndValues ...any) {
+	self.Log(Info, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Infof(format string, values ...any) {
-	self.Logf(Info, 1, format, values...)
+func (self ScopeLogger) Infof(format string, args ...any) {
+	self.Logf(Info, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Debug(message string) {
-	self.Log(Debug, 1, message)
+func (self ScopeLogger) Debug(message string, keysAndValues ...any) {
+	self.Log(Debug, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Debugf(format string, values ...any) {
-	self.Logf(Debug, 1, format, values...)
+func (self ScopeLogger) Debugf(format string, args ...any) {
+	self.Logf(Debug, 1, format, args...)
 }
 
 //
@@ -304,62 +320,62 @@ func (self MockLogger) GetMaxLevel() Level {
 }
 
 // ([Logger] interface)
-func (self MockLogger) NewMessage(level Level, depth int) Message {
+func (self MockLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
 	return nil
 }
 
 // ([Logger] interface)
-func (self MockLogger) Log(level Level, depth int, message string) {
+func (self MockLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Logf(level Level, depth int, format string, values ...any) {
+func (self MockLogger) Logf(level Level, depth int, format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Critical(message string) {
+func (self MockLogger) Critical(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Criticalf(format string, values ...any) {
+func (self MockLogger) Criticalf(format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Error(message string) {
+func (self MockLogger) Error(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Errorf(format string, values ...any) {
+func (self MockLogger) Errorf(format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Warning(message string) {
+func (self MockLogger) Warning(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Warningf(format string, values ...any) {
+func (self MockLogger) Warningf(format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Notice(message string) {
+func (self MockLogger) Notice(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Noticef(format string, values ...any) {
+func (self MockLogger) Noticef(format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Info(message string) {
+func (self MockLogger) Info(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Infof(format string, values ...any) {
+func (self MockLogger) Infof(format string, args ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Debug(message string) {
+func (self MockLogger) Debug(message string, keysAndValues ...any) {
 }
 
 // ([Logger] interface)
-func (self MockLogger) Debugf(format string, values ...any) {
+func (self MockLogger) Debugf(format string, args ...any) {
 }
