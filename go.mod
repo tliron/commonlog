@@ -6,8 +6,8 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/memberlist v0.5.0
-	github.com/rs/zerolog v1.30.0
-	github.com/tliron/kutil v0.3.5
+	github.com/rs/zerolog v1.31.0
+	github.com/tliron/kutil v0.3.6
 	k8s.io/klog/v2 v2.100.1
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/miekg/dns v1.1.26 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect

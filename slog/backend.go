@@ -56,7 +56,8 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
-					writer := util.NewBufferedWriter(file, self.BufferSize)
+					// Note: slog.NewTextHandler modifies its buffers, so we must copy byte slices
+					writer := util.NewBufferedWriter(file, self.BufferSize, true)
 					util.OnExitError(writer.Close)
 					self.Writer = writer
 				} else {
@@ -66,7 +67,8 @@ func (self *Backend) Configure(verbosity int, path *string) {
 				util.Failf("log file error: %s", err.Error())
 			}
 		} else if self.Buffered {
-			writer := util.NewBufferedWriter(os.Stderr, self.BufferSize)
+			// Note: slog.NewTextHandler modifies its buffers, so we must copy byte slices
+			writer := util.NewBufferedWriter(os.Stderr, self.BufferSize, true)
 			util.OnExitError(writer.Close)
 			self.Writer = writer
 		} else {

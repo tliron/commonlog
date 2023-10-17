@@ -63,7 +63,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
-					writer := util.NewBufferedWriter(file, self.BufferSize)
+					writer := util.NewBufferedWriter(file, self.BufferSize, false)
 					util.OnExitError(writer.Close)
 					self.Writer = writer
 				} else {
