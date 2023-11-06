@@ -75,7 +75,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 			}
 		} else {
 			self.Writer = os.Stderr
-			if terminal.Colorize {
+			if terminal.ColorizeStderr {
 				// Note: ConsoleWriter has its own built-in support for
 				// colorization, including for Windows terminals, which
 				// relies on Out being equal to Stdout or Stderr, thus

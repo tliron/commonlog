@@ -64,7 +64,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 				util.Failf("log file error: %s", err.Error())
 			}
 		} else {
-			self.colorize = terminal.Colorize
+			self.colorize = terminal.ColorizeStderr
 			if self.Buffered {
 				writer := util.NewBufferedWriter(os.Stderr, self.BufferSize, false)
 				util.OnExitError(writer.Close)

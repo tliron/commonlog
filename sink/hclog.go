@@ -4,24 +4,23 @@ import (
 	"fmt"
 	"io"
 	logpkg "log"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/tliron/commonlog"
 )
 
 //
-// Logger
+// HCLogger
 //
 
 type HCLogger struct {
-	log  commonlog.Logger
-	name string
+	name []string
 	args []any
 }
 
-func NewHCLogger(name string, args []any) *HCLogger {
+func NewHCLogger(args []any, name ...string) *HCLogger {
 	return &HCLogger{
-		log:  commonlog.GetLogger(name),
 		name: name,
 		args: args,
 	}
@@ -59,27 +58,27 @@ func (self *HCLogger) Error(msg string, args ...any) {
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) IsTrace() bool {
-	return self.log.AllowLevel(commonlog.Debug)
+	return commonlog.AllowLevel(commonlog.Debug, self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) IsDebug() bool {
-	return self.log.AllowLevel(commonlog.Info)
+	return commonlog.AllowLevel(commonlog.Info, self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) IsInfo() bool {
-	return self.log.AllowLevel(commonlog.Notice)
+	return commonlog.AllowLevel(commonlog.Notice, self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) IsWarn() bool {
-	return self.log.AllowLevel(commonlog.Warning)
+	return commonlog.AllowLevel(commonlog.Warning, self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) IsError() bool {
-	return self.log.AllowLevel(commonlog.Error)
+	return commonlog.AllowLevel(commonlog.Error, self.name...)
 }
 
 // ([hclog.Logger] interface)
@@ -89,32 +88,32 @@ func (self *HCLogger) ImpliedArgs() []any {
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) With(args ...any) hclog.Logger {
-	return NewHCLogger(self.name, args)
+	return NewHCLogger(args, self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) Name() string {
-	return self.name
+	return strings.Join(self.name, ".")
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) Named(name string) hclog.Logger {
-	return NewHCLogger(self.name+"."+name, self.args)
+	return NewHCLogger(self.args, append(self.name, name)...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) ResetNamed(name string) hclog.Logger {
-	return NewHCLogger(name, self.args)
+	return NewHCLogger(self.args, name)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) SetLevel(level hclog.Level) {
-	self.log.SetMaxLevel(hcToLevel(level))
+	commonlog.SetMaxLevel(hcToLevel(level), self.name...)
 }
 
 // ([hclog.Logger] interface)
 func (self *HCLogger) GetLevel() hclog.Level {
-	return hcFromLevel(self.log.GetMaxLevel())
+	return hcFromLevel(commonlog.GetMaxLevel(self.name...))
 }
 
 // ([hclog.Logger] interface)
@@ -131,7 +130,7 @@ func (self *HCLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Write
 // Utils
 
 func (self *HCLogger) sendMessage(level hclog.Level, msg string, args []any) {
-	if message := self.log.NewMessage(hcToLevel(level), 2); message != nil {
+	if message := commonlog.NewMessage(hcToLevel(level), 2, self.name...); message != nil {
 		message.Set("message", msg)
 
 		args = append(self.args, args...)
