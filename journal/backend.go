@@ -66,7 +66,7 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 		case commonlog.Debug:
 			priority = journal.PriDebug
 		default:
-			panic(fmt.Sprintf("unsupported level: %d", level))
+			panic(fmt.Sprintf("unsupported log level: %d", level))
 		}
 
 		var prefix string
@@ -74,7 +74,7 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 			prefix = "[" + name + "] "
 		}
 
-		return NewMessage(priority, prefix)
+		return commonlog.TraceMessage(NewMessage(priority, prefix), depth)
 	} else {
 		return nil
 	}

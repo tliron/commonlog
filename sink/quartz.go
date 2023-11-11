@@ -85,8 +85,8 @@ func (self *QuartzLogger) Enabled(level logger.Level) bool {
 // Utils
 
 func (self *QuartzLogger) sendMessage(level commonlog.Level, msg string) {
-	if message := commonlog.NewMessage(level, 2, self.name...); message != nil {
-		message.Set("message", msg)
+	if message := commonlog.NewMessage(level, 3, self.name...); message != nil {
+		message.Set("_message", msg)
 		message.Send()
 	}
 }
@@ -106,6 +106,6 @@ func quartzToLevel(level logger.Level) commonlog.Level {
 	case logger.LevelOff:
 		return commonlog.None
 	default:
-		panic(fmt.Sprintf("unsupported level: %d", level))
+		panic(fmt.Sprintf("unsupported log level: %d", level))
 	}
 }

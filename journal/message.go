@@ -29,7 +29,7 @@ func NewMessage(priority journal.Priority, prefix string) commonlog.Message {
 // ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
 	switch key {
-	case "message":
+	case "_message":
 		self.message = util.ToString(value)
 
 	default:

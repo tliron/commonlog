@@ -1,10 +1,33 @@
 package commonlog
 
 import (
-	"fmt"
+	"runtime"
+	"strconv"
 
 	"github.com/tliron/kutil/util"
 )
+
+func TraceMessage(message Message, depth int) Message {
+	if Trace && (message != nil) {
+		if _, file, line, ok := runtime.Caller(depth + 2); ok {
+			message.Set("_file", file)
+			message.Set("_line", line)
+		}
+	}
+
+	return message
+}
+
+func SendMessageWithTrace(message Message, depth int) {
+	if Trace {
+		if _, file, line, ok := runtime.Caller(depth + 2); ok {
+			message.Set("_file", file)
+			message.Set("_line", line)
+		}
+	}
+
+	message.Send()
+}
 
 //
 // Message
@@ -16,34 +39,12 @@ type Message interface {
 	//
 	// These keys are often specially supported:
 	//
-	// "message": the base text of the message
-	// "scope": the scope of the message
+	// "_message": the base text of the message
+	// "_scope": the scope of the message
 	Set(key string, value any) Message
 
 	// Sends the message to the backend
 	Send()
-}
-
-// Calls [Message.Set] on a provided sequence of key-value pairs.
-// Thus keysAndValues must have an even length.
-//
-// Non-string keys are converted to strings using [util.ToString].
-func SetMessageKeysAndValue(message Message, keysAndValues ...any) {
-	length := len(keysAndValues)
-
-	if length == 0 {
-		return
-	}
-
-	if length%2 != 0 {
-		panic(fmt.Sprintf("CommonLog message keysAndValues does not have an even number of arguments: %d", length))
-	}
-
-	for index := 0; index < length; index += 2 {
-		key := util.ToString(keysAndValues[index])
-		value := keysAndValues[index+1]
-		message.Set(key, value)
-	}
 }
 
 //
@@ -58,23 +59,32 @@ type UnstructuredMessage struct {
 	prefix  string
 	message string
 	suffix  string
+	file    string
+	line    int64
 	send    SendUnstructuredMessageFunc
 }
 
 func NewUnstructuredMessage(send SendUnstructuredMessageFunc) *UnstructuredMessage {
 	return &UnstructuredMessage{
 		send: send,
+		line: -1,
 	}
 }
 
 // ([Message] interface)
 func (self *UnstructuredMessage) Set(key string, value any) Message {
 	switch key {
-	case "message":
+	case "_message":
 		self.message = util.ToString(value)
 
-	case "scope":
+	case "_scope":
 		self.prefix = "{" + util.ToString(value) + "}"
+
+	case "_file":
+		self.file = util.ToString(value)
+
+	case "_line":
+		self.line, _ = util.ToInt64(value)
 
 	default:
 		if len(self.suffix) > 0 {
@@ -102,6 +112,13 @@ func (self *UnstructuredMessage) Send() {
 			message += " "
 		}
 		message += self.suffix
+	}
+
+	if self.file != "" {
+		message += "\n└─" + self.file
+		if self.line != -1 {
+			message += ":" + strconv.FormatInt(self.line, 10)
+		}
 	}
 
 	self.send(message)

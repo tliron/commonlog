@@ -131,14 +131,14 @@ func (self *HCLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Write
 
 func (self *HCLogger) sendMessage(level hclog.Level, msg string, args []any) {
 	if message := commonlog.NewMessage(hcToLevel(level), 2, self.name...); message != nil {
-		message.Set("message", msg)
+		message.Set("_message", msg)
 
 		args = append(self.args, args...)
 		if length := len(args); length%2 == 0 {
 			for i := 0; i < length; i += 2 {
 				if key, ok := args[i].(string); ok {
 					switch key {
-					case "message", "scope":
+					case "_message", "_scope":
 					default:
 						message.Set(key, args[i+1])
 					}
@@ -165,7 +165,7 @@ func hcToLevel(level hclog.Level) commonlog.Level {
 	case hclog.Error:
 		return commonlog.Error
 	default:
-		panic(fmt.Sprintf("unsupported level: %d", level))
+		panic(fmt.Sprintf("unsupported log level: %d", level))
 	}
 }
 
@@ -186,6 +186,6 @@ func hcFromLevel(level commonlog.Level) hclog.Level {
 	case commonlog.Debug:
 		return hclog.Trace
 	default:
-		panic(fmt.Sprintf("unsupported level: %d", level))
+		panic(fmt.Sprintf("unsupported log level: %d", level))
 	}
 }

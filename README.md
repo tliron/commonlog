@@ -95,7 +95,7 @@ import (
 
 func main() {
     if m := commonlog.NewErrorMessage(0, "engine", "parser"); m != nil {
-        m.Set("message", "Hello world!").Set("myfloat", 10.2).Send()
+        m.Set("_message", "Hello world!").Set("myfloat", 10.2).Send()
     }
     util.Exit(0)
 }
@@ -106,15 +106,15 @@ the message level is higher than the max level for that name, so you always need
 
 `Set` can accept any key and value, but two special keys are recognized by the API:
 
-* `message`: The main description of the message. This is the key used by unstructured logging.
-* `scope`: An optional identifier that can be used to group messages, making them easier to filter
+* `_message`: The main description of the message. This is the key used by unstructured logging.
+* `_scope`: An optional identifier that can be used to group messages, making them easier to filter
   (e.g. by grep on text). Backends may handle this specially. Unstructured backends may, for example,
   add it as a bracketed prefix for messages.
 
 Also note that calling `util.Exit(0)` to exit your program is not absolutely necessary, however
 it's good practice because it makes sure to flush buffered log messages for some backends.
 
-Unstructured logging is just a trivial case of structured logging in which only the `message` key
+Unstructured logging is just a trivial case of structured logging in which only the `_message` key
 is used. However, CommonLog provides a more familiar logging API:
 
 ```go
@@ -132,6 +132,12 @@ func main() {
 }
 ```
 
+The API also supports adding structured key-value pairs as optional arguments:
+
+```go
+log.Error("Hello world!", "myfloat", 10.2, "myname", "Linus Torvalds")
+```
+
 Use conditional logging to optimize for costly unstructured message creation, e.g.:
 
 ```go
@@ -140,7 +146,7 @@ if log.AllowLevel(commonlog.Debug) {
 }
 ```
 
-The scope logger can be used to automatically set the "scope" key for another logger. It
+The scope logger can be used to automatically set the `_scope` key for another logger. It
 automatically detects nesting, in which case it appends the new scope separated by a ".",
 e.g.:
 
@@ -165,7 +171,7 @@ verbosity and write to a file:
 ```go
 func main() {
     path := "myapp.log"
-    commonlog.Configure(1, &path) // nil path would write to stdout
+    commonlog.Configure(1, &path) // nil path would write to stderr
     ...
 }
 ```
@@ -201,27 +207,22 @@ It's important to note that the configuration APIs are not thread safe. This inc
 `Configure()` and `SetMaxLevel()`. Thus, make sure to get all your configuration done before
 you start sending log messages. A good place for this is `init()` or `main()` functions.
 
-Color
------
+Colorization
+------------
 
 For the simple backend you must explicitly attempt to enable ANSI color if desired. Note that
 if it's unsupported by the terminal then no ANSI codes will be sent (unless you force it via
-`terminal.EnableColor(true)`):
+`util.InitializeColorization("force")`):
 
 ```go
 import (
     "github.com/tliron/commonlog"
     _ "github.com/tliron/commonlog/simple"
-    "github.com/tliron/kutil/terminal"
     "github.com/tliron/kutil/util"
 )
 
 func main() {
-    cleanup, err := terminal.EnableColor(false)
-    util.FailOnError(err)
-    if cleanup != nil {
-        util.OnExitError(cleanup)
-    }
+    util.InitializeColorization("true")
     commonlog.GetLogger("engine.parser").Error("Hello world!") // errors are in red
     util.Exit(0)
 }

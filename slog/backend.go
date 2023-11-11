@@ -11,9 +11,10 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-const LOG_FILE_WRITE_PERMISSIONS = 0600
-
-const DEFAULT_BUFFER_SIZE = 1_000
+const (
+	LOG_FILE_WRITE_PERMISSIONS = 0600
+	DEFAULT_BUFFER_SIZE        = 1_000
+)
 
 func init() {
 	backend := NewBackend()
@@ -109,10 +110,10 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 		case commonlog.Debug:
 			slogLevel = slog.LevelDebug
 		default:
-			panic(fmt.Sprintf("unsupported level: %d", level))
+			panic(fmt.Sprintf("unsupported log level: %d", level))
 		}
 
-		return NewMessage(self.Logger, slogLevel, context.Background())
+		return commonlog.TraceMessage(NewMessage(self.Logger, slogLevel, context.Background()), depth)
 	} else {
 		return nil
 	}

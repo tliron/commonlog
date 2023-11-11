@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/memberlist v0.5.0
-	github.com/reugn/go-quartz v0.8.1-0.20231104131905-8bead9e0b92c
+	github.com/reugn/go-quartz v0.9.0
 	github.com/rs/zerolog v1.31.0
 	github.com/tliron/kutil v0.3.9
 	k8s.io/klog/v2 v2.110.1

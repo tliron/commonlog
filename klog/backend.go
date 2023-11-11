@@ -11,9 +11,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const LOG_FILE_WRITE_PERMISSIONS = 0600
-
-const DEFAULT_BUFFER_SIZE = 1_000
+const (
+	LOG_FILE_WRITE_PERMISSIONS = 0600
+	DEFAULT_BUFFER_SIZE        = 1_000
+)
 
 func init() {
 	backend := NewBackend()
@@ -92,10 +93,9 @@ func (self *Backend) GetWriter() io.Writer {
 // ([commonlog.Backend] interface)
 func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string) commonlog.Message {
 	if self.AllowLevel(level, name...) {
-		depth += 2
-		return commonlog.NewUnstructuredMessage(func(message string) {
-			if name := strings.Join(name, "."); len(name) > 0 {
-				message = name + ": " + message
+		return commonlog.TraceMessage(commonlog.NewUnstructuredMessage(func(message string) {
+			if len(name) > 0 {
+				message = "[" + strings.Join(name, ".") + "] " + message
 			}
 
 			switch level {
@@ -112,9 +112,9 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 			case commonlog.Debug:
 				klog.InfoDepth(depth, message)
 			default:
-				panic(fmt.Sprintf("unsupported level: %d", level))
+				panic(fmt.Sprintf("unsupported log level: %d", level))
 			}
-		})
+		}), depth)
 	} else {
 		return nil
 	}

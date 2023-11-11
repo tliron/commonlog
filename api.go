@@ -10,6 +10,8 @@ import (
 
 var backend Backend
 
+var Trace bool
+
 // Sets the current backend.
 //
 // A nil backend will disable all logging
@@ -112,7 +114,7 @@ func GetMaxLevel(name ...string) Level {
 // logging, if supported.
 func NewMessage(level Level, depth int, name ...string) Message {
 	if (backend != nil) && (level != None) {
-		return backend.NewMessage(level, depth, name...)
+		return backend.NewMessage(level, depth+1, name...)
 	} else {
 		return nil
 	}

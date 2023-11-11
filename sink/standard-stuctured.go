@@ -38,7 +38,7 @@ func (self *StandardStructuredHandler) Enabled(context contextpkg.Context, level
 // ([slog.Handler] interface)
 func (self *StandardStructuredHandler) Handle(context contextpkg.Context, record slog.Record) error {
 	if message := commonlog.NewMessage(slogToLevel(record.Level), 2, self.name...); message != nil {
-		message.Set("message", record.Message)
+		message.Set("_message", record.Message)
 
 		self.resolve(false)
 		for _, attr := range self.attrs {
@@ -120,7 +120,7 @@ func slogToLevel(level slog.Level) commonlog.Level {
 	case slog.LevelError:
 		return commonlog.Error
 	default:
-		panic(fmt.Sprintf("unsupported level: %d", level))
+		panic(fmt.Sprintf("unsupported log level: %d", level))
 	}
 }
 

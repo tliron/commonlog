@@ -2,6 +2,8 @@ package commonlog
 
 import (
 	"fmt"
+
+	"github.com/tliron/kutil/util"
 )
 
 //
@@ -32,12 +34,12 @@ type Logger interface {
 	NewMessage(level Level, depth int, keysAndValues ...any) Message
 
 	// Convenience method to create and send a message with at least
-	// the "message" key. Additional keys can be set by providing
+	// the "_message" key. Additional keys can be set by providing
 	// a sequence of key-value pairs.
 	Log(level Level, depth int, message string, keysAndValues ...any)
 
 	// Convenience method to create and send a message with just
-	// the "message" key, where the message is created via the format
+	// the "_message" key, where the message is created via the format
 	// and args similarly to fmt.Printf.
 	Logf(level Level, depth int, format string, args ...any)
 
@@ -86,8 +88,8 @@ func (self BackendLogger) GetMaxLevel() Level {
 
 // ([Logger] interface)
 func (self BackendLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
-	if message := NewMessage(level, depth, self.name...); message != nil {
-		SetMessageKeysAndValue(message, keysAndValues...)
+	if message := NewMessage(level, depth+1, self.name...); message != nil {
+		SetMessageKeysAndValues(message, keysAndValues...)
 		return message
 	} else {
 		return nil
@@ -97,7 +99,7 @@ func (self BackendLogger) NewMessage(level Level, depth int, keysAndValues ...an
 // ([Logger] interface)
 func (self BackendLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
 	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
-		message_.Set("message", message)
+		message_.Set("_message", message)
 		message_.Send()
 	}
 }
@@ -105,7 +107,7 @@ func (self BackendLogger) Log(level Level, depth int, message string, keysAndVal
 // ([Logger] interface)
 func (self BackendLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("message", fmt.Sprintf(format, args...))
+		message.Set("_message", fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }
@@ -171,49 +173,77 @@ func (self BackendLogger) Debugf(format string, args ...any) {
 }
 
 //
-// ScopeLogger
+// KeyValueLogger
 //
 
-// Wrapping [Logger] that calls [Message.Set] with a "scope" key
-// on all messages. There is special support for nesting scope loggers
-// such that a nested scope string is appended to the wrapped scope with
-// a "." notation.
-type ScopeLogger struct {
-	logger Logger
-	scope  string
+type KeyValueLogger struct {
+	logger        Logger
+	keysAndValues []any
 }
 
-func NewScopeLogger(logger Logger, scope string) ScopeLogger {
-	if subLogger, ok := logger.(ScopeLogger); ok {
-		scope = subLogger.scope + "." + scope
-		logger = subLogger.logger
+// Wrapping [Logger] that calls [Message.Set] with keys and values
+// on all messages.
+//
+// If we're wrapping another [KeyValueLogger] then our keys and values
+// will be merged into the wrapped keys and values.
+func NewKeyValueLogger(logger Logger, keysAndValues ...any) KeyValueLogger {
+	if keyValueLogger, ok := logger.(KeyValueLogger); ok {
+		logger = keyValueLogger.logger
+		keysAndValues, _ = MergeKeysAndValues(keyValueLogger.keysAndValues, keysAndValues)
 	}
 
-	return ScopeLogger{
-		logger: logger,
-		scope:  scope,
+	return KeyValueLogger{
+		logger:        logger,
+		keysAndValues: keysAndValues,
+	}
+}
+
+// Wrapping [Logger] that calls [Message.Set] with a "_scope" key
+// on all messages.
+//
+// If we're wrapping another [KeyValueLogger] then our "_scope" key
+// will be appended to the wrapped "_scope" key with a "." notation.
+func NewScopeLogger(logger Logger, scope string) KeyValueLogger {
+	var keysAndValues []any
+
+	if keyValueLogger, ok := logger.(KeyValueLogger); ok {
+		if scope_, ok := GetKeysAndValues(keyValueLogger.keysAndValues, "_scope"); ok {
+			if scope_ != "" {
+				scope = util.ToString(scope_) + "." + scope
+			}
+		}
+
+		logger = keyValueLogger.logger
+		keysAndValues, _ = MergeKeysAndValues(keyValueLogger.keysAndValues, []any{"_scope", scope})
+	} else {
+		keysAndValues = []any{"_scope", scope}
+	}
+
+	return KeyValueLogger{
+		logger:        logger,
+		keysAndValues: keysAndValues,
 	}
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) AllowLevel(level Level) bool {
+func (self KeyValueLogger) AllowLevel(level Level) bool {
 	return self.logger.AllowLevel(level)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) SetMaxLevel(level Level) {
+func (self KeyValueLogger) SetMaxLevel(level Level) {
 	self.logger.SetMaxLevel(level)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) GetMaxLevel() Level {
+func (self KeyValueLogger) GetMaxLevel() Level {
 	return self.logger.GetMaxLevel()
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
-	if message := self.logger.NewMessage(level, depth, keysAndValues...); message != nil {
-		message.Set("scope", self.scope)
+func (self KeyValueLogger) NewMessage(level Level, depth int, keysAndValues ...any) Message {
+	if message := self.logger.NewMessage(level, depth+1, keysAndValues...); message != nil {
+		SetMessageKeysAndValues(message, self.keysAndValues...)
 		return message
 	} else {
 		return nil
@@ -221,78 +251,78 @@ func (self ScopeLogger) NewMessage(level Level, depth int, keysAndValues ...any)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
+func (self KeyValueLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
 	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
-		message_.Set("message", message)
+		message_.Set("_message", message)
 		message_.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Logf(level Level, depth int, format string, args ...any) {
+func (self KeyValueLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("message", fmt.Sprintf(format, args...))
+		message.Set("_message", fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Critical(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Critical(message string, keysAndValues ...any) {
 	self.Log(Critical, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Criticalf(format string, args ...any) {
+func (self KeyValueLogger) Criticalf(format string, args ...any) {
 	self.Logf(Critical, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Error(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Error(message string, keysAndValues ...any) {
 	self.Log(Error, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Errorf(format string, args ...any) {
+func (self KeyValueLogger) Errorf(format string, args ...any) {
 	self.Logf(Error, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Warning(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Warning(message string, keysAndValues ...any) {
 	self.Log(Warning, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Warningf(format string, args ...any) {
+func (self KeyValueLogger) Warningf(format string, args ...any) {
 	self.Logf(Warning, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Notice(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Notice(message string, keysAndValues ...any) {
 	self.Log(Notice, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Noticef(format string, args ...any) {
+func (self KeyValueLogger) Noticef(format string, args ...any) {
 	self.Logf(Notice, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Info(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Info(message string, keysAndValues ...any) {
 	self.Log(Info, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Infof(format string, args ...any) {
+func (self KeyValueLogger) Infof(format string, args ...any) {
 	self.Logf(Info, 1, format, args...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Debug(message string, keysAndValues ...any) {
+func (self KeyValueLogger) Debug(message string, keysAndValues ...any) {
 	self.Log(Debug, 1, message, keysAndValues...)
 }
 
 // ([Logger] interface)
-func (self ScopeLogger) Debugf(format string, args ...any) {
+func (self KeyValueLogger) Debugf(format string, args ...any) {
 	self.Logf(Debug, 1, format, args...)
 }
 

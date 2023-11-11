@@ -38,7 +38,7 @@ func (self Level) String() string {
 	case Debug:
 		return "Debug"
 	default:
-		panic(fmt.Sprintf("unsupported level: %d", self))
+		panic(fmt.Sprintf("unsupported log level: %d", self))
 	}
 }
 

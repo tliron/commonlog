@@ -13,11 +13,11 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-const LOG_FILE_WRITE_PERMISSIONS = 0600
-
-const DEFAULT_BUFFER_SIZE = 1_000
-
-const TIME_FORMAT = "2006/01/02 15:04:05.000"
+const (
+	LOG_FILE_WRITE_PERMISSIONS = 0600
+	DEFAULT_BUFFER_SIZE        = 1_000
+	TIME_FORMAT                = "2006/01/02 15:04:05.000"
+)
 
 func init() {
 	backend := NewBackend()
@@ -130,10 +130,10 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 		case commonlog.Debug:
 			event = logger.Trace()
 		default:
-			panic(fmt.Sprintf("unsupported level: %d", level))
+			panic(fmt.Sprintf("unsupported log level: %d", level))
 		}
 
-		return NewMessage(event)
+		return commonlog.TraceMessage(NewMessage(event), depth)
 	} else {
 		return nil
 	}
