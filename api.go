@@ -166,10 +166,28 @@ func GetLoggerf(format string, values ...any) Logger {
 }
 
 // Convenience method to call a function and log the error, if
-// returned, using [Logger.Errorf].
+// returned, using [Logger.Error]. If task is not empty it will
+// be prefixed to the error message.
 func CallAndLogError(f func() error, task string, log Logger) {
 	if err := f(); err != nil {
-		log.Errorf("%s: %s", task, err.Error())
+		if task != "" {
+			log.Errorf("%s: %s", task, err.Error())
+		} else {
+			log.Error(err.Error())
+		}
+	}
+}
+
+// Convenience method to call a function and log the error, if
+// returned, using [Logger.Warning]. If task is not empty it will
+// be prefixed to the error message.
+func CallAndLogWarning(f func() error, task string, log Logger) {
+	if err := f(); err != nil {
+		if task != "" {
+			log.Warningf("%s: %s", task, err.Error())
+		} else {
+			log.Warning(err.Error())
+		}
 	}
 }
 
