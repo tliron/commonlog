@@ -1,7 +1,6 @@
 package simple
 
 import (
-	"io"
 	"strings"
 	"time"
 
@@ -11,51 +10,74 @@ import (
 
 const TIME_FORMAT = "2006/01/02 15:04:05.000"
 
-type FormatFunc func(message string, id []string, level commonlog.Level, colorize bool) string
+type FormatFunc func(message *commonlog.UnstructuredMessage, name []string, level commonlog.Level, colorize bool) string
 
 // ([FormatFunc] signature)
-func DefaultFormat(message string, id []string, level commonlog.Level, colorize bool) string {
-	var builder strings.Builder
+func DefaultFormat(message *commonlog.UnstructuredMessage, name []string, level commonlog.Level, colorize bool) string {
+	var s strings.Builder
 
-	FormatTime(&builder)
-	FormatLevel(&builder, level, true)
-	builder.WriteRune(' ')
-	FormatID(&builder, id)
-	builder.WriteRune(' ')
-	builder.WriteString(message)
+	FormatLevel(&s, level, true)
 
-	s := builder.String()
+	s.WriteRune(' ')
+	FormatName(&s, name)
 
-	if colorize {
-		s = FormatColorize(s, level)
+	if scope := message.ScopeString(); scope != "" {
+		s.WriteRune(' ')
+		s.WriteString(message.ScopeString())
 	}
 
-	return s
+	s.WriteRune(' ')
+	s.WriteString(message.Message)
+
+	s_ := s.String()
+	if colorize {
+		s_ = FormatColorize(s_, level)
+	}
+
+	s = strings.Builder{}
+	FormatTime(&s)
+	s.WriteString(s_)
+
+	if values := message.ValuesString(false); values != "" {
+		if s.Len() > 0 {
+			s.WriteRune(' ')
+		}
+		s.WriteString(values)
+	}
+
+	if location := message.LocationString(); location != "" {
+		/*if colorize {
+			location = FormatColorize(location, level)
+		}*/
+		s.WriteString("\n└─")
+		s.WriteString(location)
+	}
+
+	return s.String()
 }
 
-func FormatTime(writer io.StringWriter) {
-	writer.WriteString(time.Now().Format(TIME_FORMAT))
+func FormatTime(builder *strings.Builder) {
+	builder.WriteString(time.Now().Format(TIME_FORMAT))
 }
 
-func FormatID(writer io.StringWriter, id []string) {
-	writer.WriteString("[")
-	length := len(id)
-	switch length {
+func FormatName(builder *strings.Builder, name []string) {
+	builder.WriteRune('[')
+	switch length := len(name); length {
 	case 0:
 	case 1:
-		writer.WriteString(id[0])
+		builder.WriteString(name[0])
 	default:
 		last := length - 1
-		for _, i := range id[:last] {
-			writer.WriteString(i)
-			writer.WriteString(".")
+		for _, n := range name[:last] {
+			builder.WriteString(n)
+			builder.WriteRune('.')
 		}
-		writer.WriteString(id[last])
+		builder.WriteString(name[last])
 	}
-	writer.WriteString("]")
+	builder.WriteRune(']')
 }
 
-func FormatLevel(writer io.StringWriter, level commonlog.Level, align bool) {
+func FormatLevel(writer *strings.Builder, level commonlog.Level, align bool) {
 	if align {
 		switch level {
 		case commonlog.Critical:
@@ -98,9 +120,11 @@ func FormatColorize(s string, level commonlog.Level) string {
 	case commonlog.Warning:
 		return terminal.ColorYellow(s)
 	case commonlog.Notice:
-		return terminal.ColorCyan(s)
+		return terminal.ColorMagenta(s)
 	case commonlog.Info:
 		return terminal.ColorBlue(s)
+	case commonlog.Debug:
+		return terminal.ColorCyan(s)
 	default:
 		return s
 	}

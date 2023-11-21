@@ -3,6 +3,7 @@ package commonlog
 import (
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/tliron/kutil/util"
 )
@@ -51,23 +52,29 @@ type Message interface {
 // UnstructuredMessage
 //
 
-type SendUnstructuredMessageFunc func(message string)
+type SendUnstructuredMessageFunc func(message *UnstructuredMessage)
 
 // Convenience type for implementing unstructured backends. Converts a structured
 // message to an unstructured string.
 type UnstructuredMessage struct {
-	prefix  string
-	message string
-	suffix  string
-	file    string
-	line    int64
-	send    SendUnstructuredMessageFunc
+	Scope   string
+	Message string
+	Values  []UnstructuredValue
+	File    string
+	Line    int64
+
+	send SendUnstructuredMessageFunc
+}
+
+type UnstructuredValue struct {
+	Key   string
+	Value string
 }
 
 func NewUnstructuredMessage(send SendUnstructuredMessageFunc) *UnstructuredMessage {
 	return &UnstructuredMessage{
 		send: send,
-		line: -1,
+		Line: -1,
 	}
 }
 
@@ -75,22 +82,19 @@ func NewUnstructuredMessage(send SendUnstructuredMessageFunc) *UnstructuredMessa
 func (self *UnstructuredMessage) Set(key string, value any) Message {
 	switch key {
 	case "_message":
-		self.message = util.ToString(value)
+		self.Message = util.ToString(value)
 
 	case "_scope":
-		self.prefix = "{" + util.ToString(value) + "}"
+		self.Scope = util.ToString(value)
 
 	case "_file":
-		self.file = util.ToString(value)
+		self.File = util.ToString(value)
 
 	case "_line":
-		self.line, _ = util.ToInt64(value)
+		self.Line, _ = util.ToInt64(value)
 
 	default:
-		if len(self.suffix) > 0 {
-			self.suffix += ", "
-		}
-		self.suffix += key + "=" + util.ToString(value)
+		self.Values = append(self.Values, UnstructuredValue{key, util.ToString(value)})
 	}
 
 	return self
@@ -98,28 +102,86 @@ func (self *UnstructuredMessage) Set(key string, value any) Message {
 
 // ([Message] interface)
 func (self *UnstructuredMessage) Send() {
-	message := self.prefix
+	self.send(self)
+}
 
-	if len(self.message) > 0 {
-		if len(message) > 0 {
-			message += " "
-		}
-		message += self.message
+// ([fmt.Stringify] interface)
+func (self *UnstructuredMessage) String() string {
+	var s strings.Builder
+
+	if scope := self.ScopeString(); scope != "" {
+		s.WriteString(scope)
 	}
 
-	if len(self.suffix) > 0 {
-		if len(message) > 0 {
-			message += " "
+	if len(self.Message) > 0 {
+		if s.Len() > 0 {
+			s.WriteRune(' ')
 		}
-		message += self.suffix
+		s.WriteString(self.Message)
 	}
 
-	if self.file != "" {
-		message += "\n└─" + self.file
-		if self.line != -1 {
-			message += ":" + strconv.FormatInt(self.line, 10)
+	if values := self.ValuesString(true); values != "" {
+		if s.Len() > 0 {
+			s.WriteString("; ")
+		}
+		s.WriteString(values)
+	}
+
+	return strings.ReplaceAll(s.String(), "\n", "¶")
+}
+
+func (self *UnstructuredMessage) StringWithName(name ...string) string {
+	s := self.String()
+	if len(name) > 0 {
+		s = "[" + strings.Join(name, ".") + "] " + s
+	}
+	return s
+}
+
+func (self *UnstructuredMessage) ScopeString() string {
+	if len(self.Scope) > 0 {
+		return "{" + self.Scope + "}"
+	} else {
+		return ""
+	}
+}
+
+func (self *UnstructuredMessage) ValuesString(withLocation bool) string {
+	var values strings.Builder
+
+	values_ := self.Values
+	if withLocation {
+		if self.File != "" {
+			values_ = append(values_, UnstructuredValue{"_file", self.File})
+			if self.Line != -1 {
+				values_ = append(values_, UnstructuredValue{"_line", strconv.FormatInt(self.Line, 10)})
+			}
 		}
 	}
 
-	self.send(message)
+	last := len(values_) - 1
+	for index, value := range values_ {
+		values.WriteString(value.Key)
+		values.WriteRune('=')
+		values.WriteString(strconv.Quote(value.Value))
+		if index != last {
+			values.WriteRune(' ')
+		}
+	}
+
+	return values.String()
+}
+
+func (self *UnstructuredMessage) LocationString() string {
+	var location strings.Builder
+
+	if self.File != "" {
+		location.WriteString(self.File)
+		if self.Line != -1 {
+			location.WriteRune(':')
+			location.WriteString(strconv.FormatInt(self.Line, 10))
+		}
+	}
+
+	return location.String()
 }
