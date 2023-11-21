@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/memberlist v0.5.0
 	github.com/reugn/go-quartz v0.9.0
 	github.com/rs/zerolog v1.31.0
-	github.com/tliron/kutil v0.3.10
+	github.com/tliron/kutil v0.3.11
 	k8s.io/klog/v2 v2.110.1
 )
 

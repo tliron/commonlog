@@ -87,9 +87,9 @@ func (self *Backend) GetWriter() io.Writer {
 // ([commonlog.Backend] interface)
 func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string) commonlog.Message {
 	if self.AllowLevel(level, name...) {
-		return commonlog.TraceMessage(commonlog.NewUnstructuredMessage(func(message string) {
-			message = self.Format(message, name, level, self.colorize)
-			io.WriteString(self.Writer, message+"\n")
+		return commonlog.TraceMessage(commonlog.NewUnstructuredMessage(func(message *commonlog.UnstructuredMessage) {
+			message_ := self.Format(message, name, level, self.colorize)
+			io.WriteString(self.Writer, message_+"\n")
 		}), depth)
 	} else {
 		return nil

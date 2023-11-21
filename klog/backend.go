@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
@@ -93,24 +92,22 @@ func (self *Backend) GetWriter() io.Writer {
 // ([commonlog.Backend] interface)
 func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string) commonlog.Message {
 	if self.AllowLevel(level, name...) {
-		return commonlog.TraceMessage(commonlog.NewUnstructuredMessage(func(message string) {
-			if len(name) > 0 {
-				message = "[" + strings.Join(name, ".") + "] " + message
-			}
+		return commonlog.TraceMessage(commonlog.NewUnstructuredMessage(func(message *commonlog.UnstructuredMessage) {
+			message_ := message.StringWithName(name...)
 
 			switch level {
 			case commonlog.Critical:
-				klog.ErrorDepth(depth, message)
+				klog.ErrorDepth(depth, message_)
 			case commonlog.Error:
-				klog.ErrorDepth(depth, message)
+				klog.ErrorDepth(depth, message_)
 			case commonlog.Warning:
-				klog.WarningDepth(depth, message)
+				klog.WarningDepth(depth, message_)
 			case commonlog.Notice:
-				klog.InfoDepth(depth, message)
+				klog.InfoDepth(depth, message_)
 			case commonlog.Info:
-				klog.InfoDepth(depth, message)
+				klog.InfoDepth(depth, message_)
 			case commonlog.Debug:
-				klog.InfoDepth(depth, message)
+				klog.InfoDepth(depth, message_)
 			default:
 				panic(fmt.Sprintf("unsupported log level: %d", level))
 			}
