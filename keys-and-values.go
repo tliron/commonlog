@@ -28,7 +28,7 @@ func SetMessageKeysAndValues(message Message, keysAndValues ...any) {
 	}
 }
 
-func GetKeysAndValues(keysAndValues []any, key any) (any, bool) {
+func GetKeyValue(key any, keysAndValues ...any) (any, bool) {
 	length := len(keysAndValues)
 
 	if length%2 != 0 {
@@ -44,7 +44,7 @@ func GetKeysAndValues(keysAndValues []any, key any) (any, bool) {
 	return "", false
 }
 
-func SetKeysAndValues(keysAndValues []any, key any, value any) ([]any, bool) {
+func SetKeyValue(key any, value any, keysAndValues ...any) ([]any, bool) {
 	length := len(keysAndValues)
 
 	if length%2 != 0 {
@@ -72,11 +72,11 @@ func MergeKeysAndValues(toKeysAndValues []any, fromKeysAndValues []any) ([]any, 
 	var changed_ bool
 
 	for index := 0; index < length; index += 2 {
-		fromKeysAndValues, changed_ = SetKeysAndValues(toKeysAndValues, fromKeysAndValues[index], fromKeysAndValues[index+1])
+		toKeysAndValues, changed_ = SetKeyValue(fromKeysAndValues[index], fromKeysAndValues[index+1], toKeysAndValues...)
 		if changed_ {
 			changed = true
 		}
 	}
 
-	return fromKeysAndValues, changed
+	return toKeysAndValues, changed
 }
