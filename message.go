@@ -8,11 +8,18 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
+const (
+	MESSAGE = "_message"
+	SCOPE   = "_scope"
+	FILE    = "_file"
+	LINE    = "_line"
+)
+
 func TraceMessage(message Message, depth int) Message {
 	if Trace && (message != nil) {
 		if _, file, line, ok := runtime.Caller(depth + 2); ok {
-			message.Set("_file", file)
-			message.Set("_line", line)
+			message.Set(FILE, file)
+			message.Set(LINE, line)
 		}
 	}
 
@@ -22,8 +29,8 @@ func TraceMessage(message Message, depth int) Message {
 func SendMessageWithTrace(message Message, depth int) {
 	if Trace {
 		if _, file, line, ok := runtime.Caller(depth + 2); ok {
-			message.Set("_file", file)
-			message.Set("_line", line)
+			message.Set(FILE, file)
+			message.Set(LINE, line)
 		}
 	}
 
@@ -81,16 +88,16 @@ func NewUnstructuredMessage(send SendUnstructuredMessageFunc) *UnstructuredMessa
 // ([Message] interface)
 func (self *UnstructuredMessage) Set(key string, value any) Message {
 	switch key {
-	case "_message":
+	case MESSAGE:
 		self.Message = util.ToString(value)
 
-	case "_scope":
+	case SCOPE:
 		self.Scope = util.ToString(value)
 
-	case "_file":
+	case FILE:
 		self.File = util.ToString(value)
 
-	case "_line":
+	case LINE:
 		self.Line, _ = util.ToInt64(value)
 
 	default:
@@ -152,9 +159,9 @@ func (self *UnstructuredMessage) ValuesString(withLocation bool) string {
 	values_ := self.Values
 	if withLocation {
 		if self.File != "" {
-			values_ = append(values_, UnstructuredValue{"_file", self.File})
+			values_ = append(values_, UnstructuredValue{FILE, self.File})
 			if self.Line != -1 {
-				values_ = append(values_, UnstructuredValue{"_line", strconv.FormatInt(self.Line, 10)})
+				values_ = append(values_, UnstructuredValue{LINE, strconv.FormatInt(self.Line, 10)})
 			}
 		}
 	}

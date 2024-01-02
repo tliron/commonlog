@@ -32,7 +32,7 @@ func NewMessage(logger *slog.Logger, level slog.Level, context contextpkg.Contex
 // ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
 	switch key {
-	case "_message":
+	case commonlog.MESSAGE:
 		self.message = util.ToString(value)
 
 	default:

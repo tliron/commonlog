@@ -41,16 +41,16 @@ func NewScopeLogger(logger Logger, scope string) KeyValueLogger {
 	var keysAndValues []any
 
 	if keyValueLogger, ok := logger.(KeyValueLogger); ok {
-		if scope_, ok := GetKeyValue("_scope", keyValueLogger.keysAndValues...); ok {
+		if scope_, ok := GetKeyValue(SCOPE, keyValueLogger.keysAndValues...); ok {
 			if scope_ != "" {
 				scope = util.ToString(scope_) + "." + scope
 			}
 		}
 
 		logger = keyValueLogger.logger
-		keysAndValues, _ = MergeKeysAndValues(keyValueLogger.keysAndValues, []any{"_scope", scope})
+		keysAndValues, _ = MergeKeysAndValues(keyValueLogger.keysAndValues, []any{SCOPE, scope})
 	} else {
-		keysAndValues = []any{"_scope", scope}
+		keysAndValues = []any{SCOPE, scope}
 	}
 
 	return KeyValueLogger{
@@ -87,7 +87,7 @@ func (self KeyValueLogger) NewMessage(level Level, depth int, keysAndValues ...a
 // ([Logger] interface)
 func (self KeyValueLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
 	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
-		message_.Set("_message", message)
+		message_.Set(MESSAGE, message)
 		message_.Send()
 	}
 }
@@ -95,7 +95,7 @@ func (self KeyValueLogger) Log(level Level, depth int, message string, keysAndVa
 // ([Logger] interface)
 func (self KeyValueLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("_message", fmt.Sprintf(format, args...))
+		message.Set(MESSAGE, fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }

@@ -95,21 +95,28 @@ import (
 
 func main() {
     if m := commonlog.NewErrorMessage(0, "engine", "parser"); m != nil {
-        m.Set("_message", "Hello world!").Set("myfloat", 10.2).Send()
+        m.Set("_message", "Hello world!").Set("myFloat", 10.2).Send()
     }
     util.Exit(0)
 }
 ```
 
-Note that `commonlog.NewMessage` will return nil if the message cannot be created, for example if
-the message level is higher than the max level for that name, so you always need to check against nil.
+Note that `commonlog.NewMessage` will return nil if the message is not created, for example if the
+message level is higher than the max level for that name, so you always need to check against nil.
 
-`Set` can accept any key and value, but two special keys are recognized by the API:
+That first integer argument is "depth", referring to callstack depth. This is only used when tracing is
+enabled to add the file name and line number of the logging location in the source code. For example, a
+value of 0 would use this location, while a value of 1 would use the caller of the current function,
+and so on.
+
+`Set` can accept any key and value, but special keys are recognized by the API:
 
 * `_message`: The main description of the message. This is the key used by unstructured logging.
 * `_scope`: An optional identifier that can be used to group messages, making them easier to filter
   (e.g. by grep on text). Backends may handle this specially. Unstructured backends may, for example,
   add it as a bracketed prefix for messages.
+* `_file`: Source code file name
+* `_line`: Source code line number within file (expected to be an integer)
 
 Also note that calling `util.Exit(0)` to exit your program is not absolutely necessary, however
 it's good practice because it makes sure to flush buffered log messages for some backends.
@@ -127,18 +134,23 @@ import (
 var log = commonlog.GetLogger("engine.parser")
 
 func main() {
-    log.Errorf("Hello %s!", "world")
+    log.Noticef("Hello %s!", "world")
     util.Exit(0)
 }
 ```
 
-The API also supports adding structured key-value pairs as optional arguments:
+The API also supports adding structured key-value pairs as optional additional arguments to
+the methods without the "f" suffix:
 
 ```go
-log.Error("Hello world!", "myfloat", 10.2, "myname", "Linus Torvalds")
+log.Error("my message",
+    "myFloat", 10.2,
+    "myName", "Linus Torvalds",
+)
 ```
 
-Use conditional logging to optimize for costly unstructured message creation, e.g.:
+Use conditional logging to optimize to avoid costly unstructured message creation when
+the log message would not be sent:
 
 ```go
 if log.AllowLevel(commonlog.Debug) {
@@ -146,9 +158,22 @@ if log.AllowLevel(commonlog.Debug) {
 }
 ```
 
-The scope logger can be used to automatically set the `_scope` key for another logger. It
-automatically detects nesting, in which case it appends the new scope separated by a ".",
-e.g.:
+The key-value logger can be used to automatically add key-values to all log messages. It
+automatically detects nesting to add new values or override existing ones:
+
+```go
+var log = commonlog.GetLogger("engine.parser")
+var yamlLog = commonlog.NewKeyValueLogger(log,
+    "format", "yaml",
+    "formatVersion", 2,
+)
+var newYamllog = commonlog.NewKeyValueLogger(yamlLog,
+    "formatVersion", 3,
+)
+```
+
+The scope logger constructor can be used to automatically set the `_scope` key for a logger.
+It automatically detects nesting, in which case it appends the new scope separated by a ".":
 
 ```go
 var log = commonlog.GetLogger("engine.parser")
@@ -165,8 +190,8 @@ func main() {
 Configuration
 -------------
 
-All backends can be configured via a common API to support writing to files or stderr. For example, to increase
-verbosity and write to a file:
+All backends can be configured via a common API to support writing to files or stderr. For example, to
+increase verbosity and write to a file:
 
 ```go
 func main() {
@@ -207,12 +232,21 @@ It's important to note that the configuration APIs are not thread safe. This inc
 `Configure()` and `SetMaxLevel()`. Thus, make sure to get all your configuration done before
 you start sending log messages. A good place for this is `init()` or `main()` functions.
 
+Also supported is the ability to add the source code file name and line number automatically
+to all messages, taking into account the "depth" argument for `commonlog.NewMessage`. Note
+that for the logger API the "depth" is always 0:
+
+```go
+commonlog.Trace = true
+```
+
 Colorization
 ------------
 
 For the simple backend you must explicitly attempt to enable ANSI color if desired. Note that
 if it's unsupported by the terminal then no ANSI codes will be sent (unless you force it via
-`util.InitializeColorization("force")`):
+`util.InitializeColorization("force")`). This even works on Windows, which has complicated
+colorization support in its cmd terminal:
 
 ```go
 import (

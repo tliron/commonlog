@@ -38,7 +38,7 @@ func (self *StandardStructuredHandler) Enabled(context contextpkg.Context, level
 // ([slog.Handler] interface)
 func (self *StandardStructuredHandler) Handle(context contextpkg.Context, record slog.Record) error {
 	if message := commonlog.NewMessage(slogToLevel(record.Level), 2, self.name...); message != nil {
-		message.Set("_message", record.Message)
+		message.Set(commonlog.MESSAGE, record.Message)
 
 		self.resolve(false)
 		for _, attr := range self.attrs {

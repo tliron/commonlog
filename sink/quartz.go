@@ -86,7 +86,7 @@ func (self *QuartzLogger) Enabled(level logger.Level) bool {
 
 func (self *QuartzLogger) sendMessage(level commonlog.Level, msg string) {
 	if message := commonlog.NewMessage(level, 3, self.name...); message != nil {
-		message.Set("_message", msg)
+		message.Set(commonlog.MESSAGE, msg)
 		message.Send()
 	}
 }

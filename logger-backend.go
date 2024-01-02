@@ -46,7 +46,7 @@ func (self BackendLogger) NewMessage(level Level, depth int, keysAndValues ...an
 // ([Logger] interface)
 func (self BackendLogger) Log(level Level, depth int, message string, keysAndValues ...any) {
 	if message_ := self.NewMessage(level, depth+1, keysAndValues...); message_ != nil {
-		message_.Set("_message", message)
+		message_.Set(MESSAGE, message)
 		message_.Send()
 	}
 }
@@ -54,7 +54,7 @@ func (self BackendLogger) Log(level Level, depth int, message string, keysAndVal
 // ([Logger] interface)
 func (self BackendLogger) Logf(level Level, depth int, format string, args ...any) {
 	if message := self.NewMessage(level, depth+1); message != nil {
-		message.Set("_message", fmt.Sprintf(format, args...))
+		message.Set(MESSAGE, fmt.Sprintf(format, args...))
 		message.Send()
 	}
 }

@@ -29,12 +29,26 @@ func NewMessage(priority journal.Priority, prefix string) commonlog.Message {
 // ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
 	switch key {
-	case "_message":
+	case commonlog.MESSAGE:
 		self.message = util.ToString(value)
 
 	default:
 		// See: https://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html
-		key = strings.ToUpper(key)
+		switch key {
+		case commonlog.FILE:
+			key = "CODE_FILE"
+
+		case commonlog.LINE:
+			key = "CODE_LINE"
+
+		default:
+			key = strings.ToUpper(key)
+			if strings.HasPrefix(key, "_") {
+				// Field name cannot be set by user
+				key = "X" + key
+			}
+		}
+
 		if self.vars == nil {
 			self.vars = make(map[string]string)
 		}

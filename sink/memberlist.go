@@ -29,7 +29,7 @@ func NewMemberlistStandardLog(name ...string) *log.Logger {
 		}
 
 		if message := commonlog.NewMessage(level, 2, name...); message != nil {
-			message.Set("_message", line)
+			message.Set(commonlog.MESSAGE, line)
 			return message
 		} else {
 			return nil

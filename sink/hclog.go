@@ -131,14 +131,14 @@ func (self *HCLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Write
 
 func (self *HCLogger) sendMessage(level hclog.Level, msg string, args []any) {
 	if message := commonlog.NewMessage(hcToLevel(level), 2, self.name...); message != nil {
-		message.Set("_message", msg)
+		message.Set(commonlog.MESSAGE, msg)
 
 		args = append(self.args, args...)
 		if length := len(args); length%2 == 0 {
 			for i := 0; i < length; i += 2 {
 				if key, ok := args[i].(string); ok {
 					switch key {
-					case "_message", "_scope":
+					case commonlog.MESSAGE, commonlog.SCOPE, commonlog.FILE, commonlog.LINE:
 					default:
 						message.Set(key, args[i+1])
 					}
