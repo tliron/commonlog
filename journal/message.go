@@ -13,26 +13,38 @@ import (
 //
 
 type Message struct {
-	priority journal.Priority
-	prefix   string
-	message  string
-	vars     map[string]string
+	priority      journal.Priority
+	prefix        string
+	postfix       string
+	message       string
+	vars          map[string]string
+	varsInMessage bool
 }
 
-func NewMessage(priority journal.Priority, prefix string) commonlog.Message {
+func NewMessage(priority journal.Priority, prefix string, varsInMessage bool) commonlog.Message {
 	return &Message{
-		priority: priority,
-		prefix:   prefix,
+		priority:      priority,
+		prefix:        prefix,
+		varsInMessage: varsInMessage,
 	}
 }
 
 // ([commonlog.Message] interface)
 func (self *Message) Set(key string, value any) commonlog.Message {
+	value_ := util.ToString(value)
+
 	switch key {
 	case commonlog.MESSAGE:
-		self.message = util.ToString(value)
+		self.message = value_
 
 	default:
+		if self.varsInMessage {
+			if self.postfix != "" {
+				self.postfix += " "
+			}
+			self.postfix += key + "=" + value_
+		}
+
 		// See: https://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html
 		switch key {
 		case commonlog.FILE:
@@ -52,7 +64,7 @@ func (self *Message) Set(key string, value any) commonlog.Message {
 		if self.vars == nil {
 			self.vars = make(map[string]string)
 		}
-		self.vars[key] = util.ToString(value)
+		self.vars[key] = value_
 	}
 
 	return self
@@ -60,5 +72,12 @@ func (self *Message) Set(key string, value any) commonlog.Message {
 
 // ([commonlog.Message] interface)
 func (self *Message) Send() {
-	journal.Send(self.prefix+self.message, self.priority, self.vars)
+	message := self.prefix + self.message
+	if self.postfix != "" {
+		if message != "" {
+			message += " "
+		}
+		message += "{" + self.postfix + "}"
+	}
+	journal.Send(message, self.priority, self.vars)
 }

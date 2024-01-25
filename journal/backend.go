@@ -20,6 +20,8 @@ func init() {
 //
 
 type Backend struct {
+	VarsInMessage bool
+
 	nameHierarchy *commonlog.NameHierarchy
 	writer        io.Writer
 }
@@ -74,7 +76,7 @@ func (self *Backend) NewMessage(level commonlog.Level, depth int, name ...string
 			prefix = "[" + name + "] "
 		}
 
-		return commonlog.TraceMessage(NewMessage(priority, prefix), depth)
+		return commonlog.TraceMessage(NewMessage(priority, prefix, self.VarsInMessage), depth)
 	} else {
 		return nil
 	}

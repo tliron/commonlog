@@ -3,7 +3,7 @@ package sink
 import (
 	"fmt"
 
-	"github.com/reugn/go-quartz/quartz/logger"
+	"github.com/reugn/go-quartz/logger"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
