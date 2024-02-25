@@ -1,14 +1,14 @@
 module github.com/tliron/commonlog
 
-go 1.21
+go 1.22
 
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/hashicorp/go-hclog v1.6.2
 	github.com/hashicorp/memberlist v0.5.0
-	github.com/reugn/go-quartz v0.10.0
-	github.com/rs/zerolog v1.31.0
-	github.com/tliron/kutil v0.3.14
+	github.com/reugn/go-quartz v0.11.0
+	github.com/rs/zerolog v1.32.0
+	github.com/tliron/kutil v0.3.15
 	k8s.io/klog/v2 v2.120.1
 )
 
@@ -35,8 +35,8 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
 )
