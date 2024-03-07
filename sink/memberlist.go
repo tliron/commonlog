@@ -9,23 +9,23 @@ import (
 )
 
 const (
-	MEMBERLIST_ERR_PREFIX   = "[ERR] memberlist: "
-	MEMBERLIST_WARN_PREFIX  = "[WARN] memberlist: "
-	MEMBERLIST_DEBUG_PREFIX = "[DEBUG] memberlist: "
+	MemberlistErrPrefix   = "[ERR] memberlist: "
+	MemberlistWarnPrefix  = "[WARN] memberlist: "
+	MemberlistDebugPrefix = "[DEBUG] memberlist: "
 )
 
 func NewMemberlistStandardLog(name ...string) *log.Logger {
 	return NewStandardLogger(func(line string) commonlog.Message {
 		level := commonlog.Debug
 
-		if strings.HasPrefix(line, MEMBERLIST_ERR_PREFIX) {
-			line = line[len(MEMBERLIST_ERR_PREFIX):]
+		if strings.HasPrefix(line, MemberlistErrPrefix) {
+			line = line[len(MemberlistErrPrefix):]
 			level = commonlog.Error
-		} else if strings.HasPrefix(line, MEMBERLIST_WARN_PREFIX) {
-			line = line[len(MEMBERLIST_WARN_PREFIX):]
+		} else if strings.HasPrefix(line, MemberlistWarnPrefix) {
+			line = line[len(MemberlistWarnPrefix):]
 			level = commonlog.Warning
-		} else if strings.HasPrefix(line, MEMBERLIST_DEBUG_PREFIX) {
-			line = line[len(MEMBERLIST_DEBUG_PREFIX):]
+		} else if strings.HasPrefix(line, MemberlistDebugPrefix) {
+			line = line[len(MemberlistDebugPrefix):]
 		}
 
 		if message := commonlog.NewMessage(level, 2, name...); message != nil {

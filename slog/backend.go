@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	LOG_FILE_WRITE_PERMISSIONS = 0600
-	DEFAULT_BUFFER_SIZE        = 1_000
+	LogFileWritePermissions = 0600
+	DefaultBufferSize       = 1_000
 )
 
 func init() {
@@ -38,7 +38,7 @@ type Backend struct {
 
 func NewBackend() *Backend {
 	return &Backend{
-		BufferSize:    DEFAULT_BUFFER_SIZE,
+		BufferSize:    DefaultBufferSize,
 		Buffered:      true,
 		nameHierarchy: commonlog.NewNameHierarchy(),
 	}
@@ -54,7 +54,7 @@ func (self *Backend) Configure(verbosity int, path *string) {
 		self.nameHierarchy.SetMaxLevel(commonlog.None)
 	} else {
 		if path != nil {
-			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LOG_FILE_WRITE_PERMISSIONS); err == nil {
+			if file, err := os.OpenFile(*path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, LogFileWritePermissions); err == nil {
 				util.OnExitError(file.Close)
 				if self.Buffered {
 					// Note: slog.NewTextHandler modifies its buffers, so we must copy byte slices

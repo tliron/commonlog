@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/memberlist v0.5.0
 	github.com/reugn/go-quartz v0.11.0
 	github.com/rs/zerolog v1.32.0
-	github.com/tliron/kutil v0.3.15
+	github.com/tliron/kutil v0.3.17
 	k8s.io/klog/v2 v2.120.1
 )
 
@@ -35,8 +35,8 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/crypto v0.20.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
 )

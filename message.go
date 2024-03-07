@@ -114,47 +114,70 @@ func (self *UnstructuredMessage) Send() {
 
 // ([fmt.Stringify] interface)
 func (self *UnstructuredMessage) String() string {
-	var s strings.Builder
-
-	if scope := self.ScopeString(); scope != "" {
-		s.WriteString(scope)
-	}
+	var builder strings.Builder
 
 	if len(self.Message) > 0 {
-		if s.Len() > 0 {
-			s.WriteRune(' ')
-		}
-		s.WriteString(self.Message)
+		builder.WriteString(self.Message)
 	}
 
 	if values := self.ValuesString(true); values != "" {
-		if s.Len() > 0 {
-			s.WriteString("; ")
+		if builder.Len() > 0 {
+			builder.WriteRune(' ')
 		}
-		s.WriteString(values)
+		builder.WriteString(values)
 	}
 
-	return strings.ReplaceAll(s.String(), "\n", "¶")
+	return strings.ReplaceAll(builder.String(), "\n", "¶")
 }
 
-func (self *UnstructuredMessage) StringWithName(name ...string) string {
-	s := self.String()
-	if len(name) > 0 {
-		s = "[" + strings.Join(name, ".") + "] " + s
-	}
-	return s
-}
-
-func (self *UnstructuredMessage) ScopeString() string {
-	if len(self.Scope) > 0 {
-		return "{" + self.Scope + "}"
-	} else {
+func (self *UnstructuredMessage) Prefix(name ...string) string {
+	if (len(name) == 0) && (self.Scope == "") {
 		return ""
+	}
+
+	var builder strings.Builder
+
+	builder.WriteRune('[')
+
+	switch length := len(name); length {
+	case 0:
+	case 1:
+		builder.WriteString(name[0])
+	default:
+		last := length - 1
+		for _, n := range name[:last] {
+			builder.WriteString(n)
+			builder.WriteRune('.')
+		}
+		builder.WriteString(name[last])
+	}
+
+	if self.Scope != "" {
+		builder.WriteRune(':')
+		builder.WriteString(self.Scope)
+	}
+
+	builder.WriteRune(']')
+
+	return builder.String()
+}
+
+func (self *UnstructuredMessage) StringWithPrefix(name ...string) string {
+	if prefix := self.Prefix(name...); prefix == "" {
+		return self.String()
+	} else {
+		return prefix + " " + self.String()
 	}
 }
 
 func (self *UnstructuredMessage) ValuesString(withLocation bool) string {
+	if len(self.Values) == 0 {
+		return ""
+	}
+
 	var values strings.Builder
+
+	values.WriteRune('{')
 
 	values_ := self.Values
 	if withLocation {
@@ -176,18 +199,22 @@ func (self *UnstructuredMessage) ValuesString(withLocation bool) string {
 		}
 	}
 
+	values.WriteRune('}')
+
 	return values.String()
 }
 
 func (self *UnstructuredMessage) LocationString() string {
+	if self.File == "" {
+		return ""
+	}
+
 	var location strings.Builder
 
-	if self.File != "" {
-		location.WriteString(self.File)
-		if self.Line != -1 {
-			location.WriteRune(':')
-			location.WriteString(strconv.FormatInt(self.Line, 10))
-		}
+	location.WriteString(self.File)
+	if self.Line != -1 {
+		location.WriteRune(':')
+		location.WriteString(strconv.FormatInt(self.Line, 10))
 	}
 
 	return location.String()
