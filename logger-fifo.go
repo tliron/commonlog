@@ -30,12 +30,8 @@ func NewLoggerFIFO(prefix string, log Logger, level Level) *LoggerFIFO {
 
 func (self *LoggerFIFO) Start() error {
 	if err := self.create(); err == nil {
-		if file, err := os.Open(self.Path); err == nil {
-			go self.start(file)
-			return nil
-		} else {
-			return err
-		}
+		go self.start()
+		return nil
 	} else {
 		return err
 	}
@@ -51,20 +47,26 @@ func (self *LoggerFIFO) create() error {
 	return syscall.Mkfifo(self.Path, 0600)
 }
 
-func (self *LoggerFIFO) start(file *os.File) {
-	defer CallAndLogError(file.Close, "File.Close", self.Log)
+func (self *LoggerFIFO) start() {
+	// Note: os.Open will block until the FIFO will be opened for write
+	if file, err := os.Open(self.Path); err == nil {
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			self.Log.Log(self.Level, 0, scanner.Text())
+		}
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		self.Log.Log(self.Level, 0, scanner.Text())
-	}
+		if err := scanner.Err(); err != nil {
+			self.Log.Error(err.Error())
+		}
 
-	if err := scanner.Err(); err != nil {
-		self.Log.Error(err.Error())
-	}
-
-	self.Log.Debug("closing logger FIFO")
-	if err := os.Remove(self.Path); err != nil {
-		self.Log.Error(err.Error())
+		self.Log.Debug("closing logger FIFO")
+		if err := file.Close(); err != nil {
+			self.Log.Error(err.Error())
+		}
+		if err := os.Remove(self.Path); err != nil {
+			self.Log.Error(err.Error())
+		}
+	} else {
+		self.Log.Critical(err.Error())
 	}
 }
