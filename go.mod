@@ -5,11 +5,11 @@ go 1.22
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/hashicorp/go-hclog v1.6.2
-	github.com/hashicorp/memberlist v0.5.0
-	github.com/reugn/go-quartz v0.11.1
+	github.com/hashicorp/memberlist v0.5.1
+	github.com/reugn/go-quartz v0.11.2
 	github.com/rs/zerolog v1.32.0
 	github.com/segmentio/ksuid v1.0.4
-	github.com/tliron/kutil v0.3.18
+	github.com/tliron/kutil v0.3.23
 	k8s.io/klog/v2 v2.120.1
 )
 
@@ -21,7 +21,7 @@ require (
 	github.com/google/btree v1.0.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
-	github.com/hashicorp/go-msgpack v0.5.3 // indirect
+	github.com/hashicorp/go-msgpack/v2 v2.1.1 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect

@@ -150,13 +150,13 @@ func NewDebugMessage(depth int, name ...string) Message {
 	return NewMessage(Debug, depth+1, name...)
 }
 
-// Creates a [BackendLogger] for the given path. The path is converted to
-// a name using [string.Split] on ".".
+// Provides a [BackendLogger] instance for the given path. The path
+// is converted to a name using [PathToName].
+//
+// Note that this function will always return a new instance and that
+// instances for the same path are functionally equivalent.
 func GetLogger(path string) Logger {
-	name := strings.Split(path, ".")
-	if len(name) == 0 {
-		name = nil
-	}
+	name := PathToName(path)
 	return NewBackendLogger(name...)
 }
 
