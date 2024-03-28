@@ -10,16 +10,16 @@ import (
 // KeyValueLogger
 //
 
-type KeyValueLogger struct {
-	logger        Logger
-	keysAndValues []any
-}
-
 // Wrapping [Logger] that calls [Message.Set] with keys and values
 // on all messages.
 //
 // If we're wrapping another [KeyValueLogger] then our keys and values
 // will be merged into the wrapped keys and values.
+type KeyValueLogger struct {
+	logger        Logger
+	keysAndValues []any
+}
+
 func NewKeyValueLogger(logger Logger, keysAndValues ...any) KeyValueLogger {
 	if keyValueLogger, ok := logger.(KeyValueLogger); ok {
 		logger = keyValueLogger.logger

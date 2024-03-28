@@ -15,6 +15,7 @@ import (
 // LoggerFIFO
 //
 
+// A Linux FIFO file that forwards all lines written to it to a [Logger].
 type LoggerFIFO struct {
 	Path  string
 	Log   Logger

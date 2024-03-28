@@ -9,7 +9,7 @@ require (
 	github.com/reugn/go-quartz v0.11.2
 	github.com/rs/zerolog v1.32.0
 	github.com/segmentio/ksuid v1.0.4
-	github.com/tliron/kutil v0.3.23
+	github.com/tliron/kutil v0.3.24
 	k8s.io/klog/v2 v2.120.1
 )
 

@@ -8,7 +8,6 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-// Broken in Quartz v0.8.0, see: https://github.com/reugn/go-quartz/issues/74
 func SetDefaultQuartzLogger(name ...string) {
 	logger.SetDefault(NewQuartzLogger(name...))
 }

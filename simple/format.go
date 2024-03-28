@@ -10,10 +10,10 @@ import (
 
 const TimeFormat = "2006/01/02 15:04:05.000"
 
-type FormatFunc func(message *commonlog.UnstructuredMessage, name []string, level commonlog.Level, colorize bool) string
+type FormatFunc func(message *commonlog.LinearMessage, name []string, level commonlog.Level, colorize bool) string
 
 // ([FormatFunc] signature)
-func DefaultFormat(message *commonlog.UnstructuredMessage, name []string, level commonlog.Level, colorize bool) string {
+func DefaultFormat(message *commonlog.LinearMessage, name []string, level commonlog.Level, colorize bool) string {
 	var builder strings.Builder
 
 	if !colorize {

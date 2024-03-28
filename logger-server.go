@@ -11,6 +11,7 @@ import (
 // LoggerServer
 //
 
+// A TCP server file that forwards all lines written to it to a [Logger].
 type LoggerServer struct {
 	IPStack util.IPStack
 	Address string

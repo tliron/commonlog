@@ -4,8 +4,8 @@ package commonlog
 // NameHierarchy
 //
 
-// Convenience type for implementing maximum level per name in backends
-// with support for inheritance.
+// Convenience type for implementing maximum level per name in backends.
+// Supports level inheritance.
 type NameHierarchy struct {
 	root *nameHierarchyNode
 }
