@@ -4,13 +4,13 @@ go 1.22
 
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
-	github.com/hashicorp/go-hclog v1.6.2
+	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/memberlist v0.5.1
-	github.com/reugn/go-quartz v0.11.2
-	github.com/rs/zerolog v1.32.0
+	github.com/reugn/go-quartz v0.12.0
+	github.com/rs/zerolog v1.33.0
 	github.com/segmentio/ksuid v1.0.4
-	github.com/tliron/kutil v0.3.24
-	k8s.io/klog/v2 v2.120.1
+	github.com/tliron/kutil v0.3.25
+	k8s.io/klog/v2 v2.130.1
 )
 
 require (
@@ -36,8 +36,8 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/term v0.18.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
 )

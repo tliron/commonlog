@@ -8,19 +8,24 @@ CommonLog
 A common Go API for structured *and* unstructured logging with support for pluggable backends
 and sinks.
 
-Supported backends (you can log *to* these APIs):
+Currently supported backends (you can log *to* these APIs):
 
-* simple (built-in textual, colorized backend; see below)
-* [klog](https://github.com/kubernetes/klog) (used by the [Kubernetes client library](https://github.com/kubernetes/client-go/))
+* simple (included textual, colorized backend; see below)
+* [Go built-in structured logging (import log/slog)](https://pkg.go.dev/log/slog)
+* [klog](https://github.com/kubernetes/klog)
 * [systemd journal](https://www.freedesktop.org/software/systemd/man/systemd-journald.service.html)
 * [zerolog](https://github.com/rs/zerolog)
-* [slog](https://pkg.go.dev/log/slog) (introduced in Go 1.21)
 
-Supported sinks (you can capture logs *from* these APIs):
+Currently supported sinks (you can capture logs *from* these APIs):
 
-* [Go built-in logging](https://pkg.go.dev/log)
-* [Go built-in structured logging](https://pkg.go.dev/log/slog)
+* [Go built-in logging (import log)](https://pkg.go.dev/log)
+* [Go built-in structured logging (import log/slog)](https://pkg.go.dev/log/slog)
 * [hclog](https://github.com/hashicorp/go-hclog) (used by many HashiCorp libraries)
+* [klog](https://github.com/kubernetes/klog) (used by the [Kubernetes client library](https://github.com/kubernetes/client-go/))
+* [memberlist](https://github.com/hashicorp/memberlist)
+* [Quartz](https://github.com/reugn/go-quartz)
+
+Please contribute more backends and sinks!
 
 Rationale
 ---------
@@ -47,10 +52,10 @@ or transmitting your log messages is likely the biggest factor in your optimizat
 
 A FAQ is: Why not standardize on the built-in [slog](https://pkg.go.dev/log/slog) API? Slog indeed is a big
 step forward for Go, not only because it supports structured messages, but also because it decouples the
-handler, an interface, from the logger. This enables alternative backends, a feature tragically missing from
-Go's [log library](https://pkg.go.dev/log). Unfortunately, slog was introduced only in Go 1.21 and is thus
-not used by much go Go's pre-1.21 ecosystem of 3rd-party libraries. CommonLog supports slog both as a backend
-and as a sink, so you can easily mix the CommonLog API with slog API *and* handling.
+handler (an interface) from the logger. This enables alternative backends, a feature tragically missing from
+Go's [older log library](https://pkg.go.dev/log). Unfortunately, slog was introduced only in Go 1.21 and is thus
+not used by much go Go's pre-1.21 ecosystem of 3rd-party libraries. CommonLog supports slog *both* as a backend
+*and* as a sink, so you can easily mix the CommonLog API with slog API *and* loggers.
 
 Features
 --------
@@ -59,15 +64,27 @@ Features
   inherits from "engine.parser", which in turn inherits from "engine". The empty name is the root of the
   hierarchy. Each name's default verbosity is that of its parent, which you can then override with
   `commonlog.SetMaxLevel()`.
-* Support for call stack depth. This can be used by a backend (for example, by klog) to find out where in
-  the code the logging happened.
+* Support for call stack depth. This can be used by a backend to find out where in the code the logging
+  happened.
 * No need to create logger objects. The "true" API entrypoint is the global function `commonlog.NewMessage`,
-  which you provide with a name and a level. The default logger type is just a convenient wrapper around it
-  that provides the familiar unstructured functions.
-* The unstructured `commonlog.Logger` type is an interface, allowing you to more easily switch implementations
-  per use without having to introduce a whole backend. For example, you can assign the `commonlog.MOCK_LOGGER`
+  which you provide with a name and a level. The logger type is just a convenient wrapper around that provides
+  a more familiar logger object API.
+* The `commonlog.Logger` type is an interface, allowing you to more easily switch implementations per use
+  without having to introduce a whole backend. For example, you can assign the `commonlog.MOCK_LOGGER`
   to disable a logger without changing the rest of your implementation. Compare with Go's built-in
   [`Logger`](https://pkg.go.dev/log#Logger) type, which frustratingly is a struct rather than an interface.
+
+Annoying Sinks
+--------------
+
+Some logging libraries simply do not provide a way to hook API calls. For example, Go's built-in logging
+(pre-slog) defines the logger object as a struct rather than an interface. Thus, the only way to implement a
+sink is to capture the final output and parse it line by line.
+
+This is inefficent but it *does* work and does satisfy our goals here. Again, CommonLog does not and cannot
+provide the most performant logging solution. If that's a priority, and you want unified logging, then *you*
+have to make sure all your code, including imported libraries, uses *one only one* performant library, such as
+[zerolog](https://github.com/rs/zerolog).
 
 Basic Usage
 -----------

@@ -28,11 +28,6 @@ func DefaultFormat(message *commonlog.LinearMessage, name []string, level common
 		builder.WriteString(message.Prefix(name...))
 	}
 
-	if message.Message != "" {
-		builder.WriteRune(' ')
-		builder.WriteString(message.Message)
-	}
-
 	if colorize {
 		s := FormatColorize(builder.String(), level)
 		builder = strings.Builder{}
@@ -41,15 +36,21 @@ func DefaultFormat(message *commonlog.LinearMessage, name []string, level common
 		builder.WriteString(s)
 	}
 
+	if message.Message != "" {
+		builder.WriteRune(' ')
+		builder.WriteString(message.Message)
+	}
+
 	if values := message.ValuesString(false); values != "" {
 		builder.WriteRune(' ')
+		if colorize {
+			values = terminal.ColorGray(values)
+		}
 		builder.WriteString(values)
+
 	}
 
 	if location := message.LocationString(); location != "" {
-		/*if colorize {
-			location = FormatColorize(location, level)
-		}*/
 		builder.WriteString("\n└─")
 		builder.WriteString(location)
 	}
