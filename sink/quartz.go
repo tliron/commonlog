@@ -8,10 +8,6 @@ import (
 	"github.com/tliron/kutil/util"
 )
 
-func SetDefaultQuartzLogger(name ...string) {
-	logger.SetDefault(NewQuartzLogger(name...))
-}
-
 //
 // QuartzLogger
 //
