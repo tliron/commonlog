@@ -1,15 +1,15 @@
 module github.com/tliron/commonlog
 
-go 1.24.4
+go 1.25.1
 
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/memberlist v0.5.3
-	github.com/reugn/go-quartz v0.14.0
+	github.com/reugn/go-quartz v0.15.2
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/ksuid v1.0.4
-	github.com/tliron/kutil v0.3.27
+	github.com/tliron/go-kutil v0.4.0
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -32,12 +32,12 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.26 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
-	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
+	github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/sasha-s/go-deadlock v0.3.5 // indirect
+	github.com/sasha-s/go-deadlock v0.3.6 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/term v0.35.0 // indirect
 )

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/tliron/commonlog"
-	"github.com/tliron/kutil/util"
+	"github.com/tliron/go-kutil/util"
 )
 
 //

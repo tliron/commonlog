@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/tliron/commonlog"
-	"github.com/tliron/kutil/util"
+	"github.com/tliron/go-kutil/util"
 )
 
 type LineParseFunc func(line string) commonlog.Message

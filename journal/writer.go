@@ -2,7 +2,7 @@ package journal
 
 import (
 	"github.com/coreos/go-systemd/journal"
-	"github.com/tliron/kutil/util"
+	"github.com/tliron/go-kutil/util"
 )
 
 //
